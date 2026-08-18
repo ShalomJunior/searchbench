@@ -1,5 +1,5 @@
+from collections import defaultdict
 from math import log
-from collections import defaultdict, Counter
 
 # Toy Corpus
 documents = {
@@ -64,10 +64,10 @@ def search(query, corpus, index):
     for id in candidates:
         doc_tokens = corpus[id].split()
         dot = 0.0
-        for term in q_emb:
+        for term, value in q_emb.items():
             if term in doc_tokens:
                 d_term_score = tfidf(term, doc_tokens, corpus, index)
-                dot += q_emb[term] * d_term_score
+                dot += value * d_term_score
 
         # NOTE FOR PRODUCTION:
         # Calculating the d_norm inside the search query loop is currently your heaviest remaining
@@ -90,3 +90,26 @@ def search(query, corpus, index):
     # 5. Rank and return
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     return ranked
+
+
+def main():
+    print("Building inverted index...")
+    index = build_index(documents)
+    print(f"Index built! Vocabulary size: {len(index)}\n")
+
+    queries = ["machine learning", "python data", "artificial intelligence"]
+
+    for q in queries:
+        print(f"--- Searching for: '{q}' ---")
+        results = search(q, documents, index)
+
+        if not results:
+            print("No matching documents found.\n")
+        else:
+            for id, score in results:
+                print(f"[{score:.4f}] Doc {id}: {documents[id]}")
+            print()
+
+
+if __name__ == "__main__":
+    main()
