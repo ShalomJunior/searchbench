@@ -6,7 +6,7 @@ At its core, Information Retrieval (IR) is the science of bridging the gap betwe
 
 **Query**: The explicit, often imperfect, expression of a user's information need.
 
-**Document**: The fundamental unit of information we are searching through—whether that is a Wikipedia article, a legal contract, or a single parsed paragraph.
+**Document**: The fundamental unit of information I am searching through—whether that is a Wikipedia article, a legal contract, or a single parsed paragraph.
 
 **Relevance**: The ultimate metric of success. It defines how accurately a retrieved document satisfies the true intent behind the query.
 
@@ -26,7 +26,7 @@ $$TF(t, d) = \frac{\text{count of term } t \text{ in document } d}{\text{total t
 
 ### Inverse Document Frequency (IDF)
 
-This answers the question: How rare is this term across the entire dataset? Words like "the" or "is" will have a high TF but are useless for search. Rare words like "backpropagation" carry high information value. We use a logarithm to heavily penalize common words and boost rare ones.
+This answers the question: How rare is this term across the entire dataset? Words like "the" or "is" will have a high TF but are useless for search. Rare words like "backpropagation" carry high information value. I use a logarithm to heavily penalize common words and boost rare ones.
 
 $$IDF(t) = \log\left(\frac{N}{df_t}\right)$$
 
@@ -34,19 +34,19 @@ _(Where $N$ is the total number of documents, and $df_t$ is the number of docume
 
 ### TF-IDF Score
 
-We simply multiply them together. A term gets a high score if it appears frequently in a specific document but rarely across the whole corpus.
+I simply multiply them together. A term gets a high score if it appears frequently in a specific document but rarely across the whole corpus.
 
 $$TF\text{-}IDF(t, d) = TF(t, d) \times IDF(t)$$
 
 ### Cosine Similarity
 
-To search, we treat the query and every document as mathematical vectors in a high-dimensional space (where every unique word in the corpus is a dimension). We then measure the angle between the query vector ($\mathbf{q}$) and the document vector ($\mathbf{d}$).
+To search, I treat the query and every document as mathematical vectors in a high-dimensional space (where every unique word in the corpus is a dimension). I then measure the angle between the query vector ($\mathbf{q}$) and the document vector ($\mathbf{d}$).
 
 $$\text{Cosine Similarity} = \frac{\mathbf{q} \cdot \mathbf{d}}{\Vert{}\mathbf{q}\Vert{} \Vert{}\mathbf{d}\Vert{}}$$
 
 ## 2. Benchmark: Naive vs Inverted Index
 
-To prove why an inverted index is strictly necessary for web-scale retrieval, we benchmarked an $O(N)$ linear scan against an $O(1)$ inverted index lookup over a synthetic corpus of 100,000 documents.
+To prove why an inverted index is strictly necessary for web-scale retrieval, I benchmarked an $O(N)$ linear scan against an $O(1)$ inverted index lookup over a synthetic corpus of 100,000 documents.
 
 ### Algorithmic Complexity
 
@@ -63,7 +63,7 @@ With an augmented vocabulary of 30 words, the inverted index successfully filter
 - **Speedup**: ~26.49x faster
 
 **Scaling Implications**:
-While our toy benchmark showed a ~26x speedup, in a real-world system with millions of documents and a massive vocabulary, a specific query term only hits a tiny fraction of the corpus. Because the naive search time grows linearly with the entire corpus size $O(N)$ while the indexed search scales only with the number of candidate matches $O(|Candidates|)$, the true speedup multiplier can easily reach $10^4$ or $10^5$ (10,000x to 100,000x faster).
+While my toy benchmark showed a ~26x speedup, in a real-world system with millions of documents and a massive vocabulary, a specific query term only hits a tiny fraction of the corpus. Because the naive search time grows linearly with the entire corpus size $O(N)$ while the indexed search scales only with the number of candidate matches $O(|Candidates|)$, the true speedup multiplier can easily reach $10^4$ or $10^5$ (10,000x to 100,000x faster).
 
 ## 3. The Mathematics of BM25
 
@@ -98,3 +98,28 @@ I ran an empirical parameter experiment to observe these constraints in action. 
 - `k1=1.5` | Doc 1: 0.4109 | Doc 2: 0.5039
 - `k1=3.0` | Doc 1: 0.4748 | Doc 2: 0.6474
 - `k1=10.` | Doc 1: 0.5686 | Doc 2: 0.9277 *(keyword stuffing)*
+
+## 4. Information Retrieval (IR) Metrics
+
+To properly benchmark and evaluate my search engines, I use the following standard industry metrics:
+
+### Precision@K
+Measures the proportion of retrieved documents in the top $K$ that are actually relevant.
+$$\text{Precision@K} = \frac{| \text{Relevant} \cap \text{Retrieved}_{@K} |}{K}$$
+
+### Recall@K
+Measures the proportion of all truly relevant documents that were successfully retrieved in the top $K$.
+$$\text{Recall@K} = \frac{| \text{Relevant} \cap \text{Retrieved}_{@K} |}{|\text{Relevant}|}$$
+
+### Reciprocal Rank (RR) & Mean Reciprocal Rank (MRR)
+For a *single query*, I calculate the Reciprocal Rank (RR) by looking at how far down the ranked list the *first* relevant document appears. If the first relevant document is at rank $j$, the RR is $\frac{1}{j}$.
+$$\text{RR} = \frac{1}{j}$$
+
+**Mean Reciprocal Rank (MRR)** is simply the average of the RR across an entire dataset of multiple queries ($|Q|$):
+$$\text{MRR} = \frac{1}{|Q|} \sum_{i=1}^{|Q|} \text{RR}_i$$
+
+### Normalized Discounted Cumulative Gain (NDCG@K)
+Measures the ranking quality by taking into account the *graded relevance* of documents (e.g., highly relevant=3, somewhat relevant=1) and penalizing relevant documents that appear lower in the list using a logarithmic discount. This uses the industry-standard exponential formulation.
+$$\text{DCG@K} = \sum_{i=1}^{K} \frac{2^{rel_i} - 1}{\log_2(i + 1)}$$
+$$\text{NDCG@K} = \frac{\text{DCG@K}}{\text{IDCG@K}}$$
+*(Where IDCG is the Ideal DCG, obtained by sorting all documents by their true relevance score).*

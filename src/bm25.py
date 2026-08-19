@@ -27,7 +27,8 @@ class BM25Engine:
             for text in set(words):
                 self.index[text].append(doc_id)
         self.total_docs = len(corpus)
-        self.avgdl /= self.total_docs
+        if self.total_docs > 0:
+            self.avgdl /= self.total_docs
 
     def compute_idf(self, term):
         """
