@@ -123,3 +123,14 @@ Measures the ranking quality by taking into account the *graded relevance* of do
 $$\text{DCG@K} = \sum_{i=1}^{K} \frac{2^{rel_i} - 1}{\log_2(i + 1)}$$
 $$\text{NDCG@K} = \frac{\text{DCG@K}}{\text{IDCG@K}}$$
 *(Where IDCG is the Ideal DCG, obtained by sorting all documents by their true relevance score).*
+
+## 5. BEIR Benchmark (SciFact)
+
+To prove the efficacy of my BM25 implementation, I benchmarked it against the **SciFact** dataset from the BEIR benchmark suite. The dataset consists of 5,183 real-world scientific documents and 300 queries.
+
+**Results (Raw BM25, no Tokenizer):**
+- **Average NDCG@10:** `0.5379`
+- **Average MRR:** `0.5176`
+- **Average Recall@100:** `0.7894`
+
+Despite being a pure keyword-matching algorithm (with no stopwords removal or stemming), the raw BM25 engine achieves an MRR of `0.51`, meaning the very first highly relevant scientific document appears on average at rank #2.

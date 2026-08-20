@@ -11,14 +11,19 @@ def get_mtimes(directory):
                 mtimes[path] = os.path.getmtime(path)
     return mtimes
 
-def watch_and_format(directory):
-    print(f"Watching {directory} for changes to format with Black...")
-    last_mtimes = get_mtimes(directory)
-    black_path = "/home/masterjs/kaggle/.venv/bin/black"
+def watch_and_format(directories):
+    print(f"Watching {directories} for changes to format with Ruff...")
+    last_mtimes = get_mtimes(directories[0])
+    for d in directories[1:]:
+        last_mtimes.update(get_mtimes(d))
+        
+    ruff_path = "/home/masterjs/kaggle/.venv/bin/ruff"
     
     while True:
         time.sleep(1)
-        current_mtimes = get_mtimes(directory)
+        current_mtimes = {}
+        for d in directories:
+            current_mtimes.update(get_mtimes(d))
         
         changed_files = []
         for path, mtime in current_mtimes.items():
@@ -28,14 +33,21 @@ def watch_and_format(directory):
                 
         if changed_files:
             try:
-                subprocess.run([black_path, "-q"] + changed_files)
-                print(f"Formatted: {', '.join(changed_files)}")
+                # 1. Fix imports and lint errors
+                subprocess.run([ruff_path, "check", "--fix", "-q"] + changed_files)
+                # 2. Format the code
+                subprocess.run([ruff_path, "format", "-q"] + changed_files)
+                print(f"Ruff formatted: {', '.join(changed_files)}")
             except Exception as e:
                 print(f"Error formatting: {e}")
                 
             # Update mtimes after formatting so we don't infinitely format
-            last_mtimes = get_mtimes(directory)
+            last_mtimes = {}
+            for d in directories:
+                last_mtimes.update(get_mtimes(d))
 
 if __name__ == "__main__":
-    src_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src')
-    watch_and_format(src_dir)
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    src_dir = os.path.join(project_root, 'src')
+    exp_dir = os.path.join(project_root, 'experiments')
+    watch_and_format([src_dir, exp_dir])
