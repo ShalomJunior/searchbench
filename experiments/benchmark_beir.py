@@ -62,8 +62,9 @@ def main():
     #   - Calculate NDCG@10, MRR, and Recall@100
     # Average the metrics across all queries and print the final results.
     ndcg_list = []
-    mrr_list = []
-    recall_list = []
+    mrr_10_list = []
+    recall_10_list = []
+    recall_100_list = []
 
     for q_id, query in queries.items():
         # Safety guard: skip queries with no ground truth
@@ -76,13 +77,15 @@ def main():
         relevant_ids = [doc_id for doc_id, score in scores.items() if score > 0]
 
         ndcg_list.append(ndcg_at_k(retrieved_ids, scores, k=10))
-        mrr_list.append(mrr(retrieved_ids, relevant_ids))
-        recall_list.append(recall_at_k(retrieved_ids, relevant_ids, k=100))
+        mrr_10_list.append(mrr(retrieved_ids, relevant_ids, k=10))
+        recall_10_list.append(recall_at_k(retrieved_ids, relevant_ids, k=10))
+        recall_100_list.append(recall_at_k(retrieved_ids, relevant_ids, k=100))
 
-    if queries:
-        print(f"Average NDCG@10: {sum(ndcg_list) / len(ndcg_list):.4f}")
-        print(f"Average MRR: {sum(mrr_list) / len(mrr_list):.4f}")
-        print(f"Average Recall@100: {sum(recall_list) / len(recall_list):.4f}")
+    if ndcg_list:
+        print(f"Average NDCG@10:    {sum(ndcg_list) / len(ndcg_list):.4f}")
+        print(f"Average MRR@10:     {sum(mrr_10_list) / len(mrr_10_list):.4f}")
+        print(f"Average Recall@10:  {sum(recall_10_list) / len(recall_10_list):.4f}")
+        print(f"Average Recall@100: {sum(recall_100_list) / len(recall_100_list):.4f}")
 
 
 if __name__ == "__main__":

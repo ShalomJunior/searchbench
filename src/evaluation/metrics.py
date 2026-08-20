@@ -15,9 +15,11 @@ def recall_at_k(retrieved_ids, relevant_ids, k=10):
     return len(inter) / len(relevant_ids)
 
 
-def mrr(retrieved_ids, relevant_ids):
+def mrr(retrieved_ids, relevant_ids, k=None):
     """Calculate Reciprocal Rank for a single query."""
     rel = set(relevant_ids)
+    if k is not None:
+        retrieved_ids = retrieved_ids[:k]
     j = -1
     while j + 1 < len(retrieved_ids):
         j += 1

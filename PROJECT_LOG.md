@@ -124,13 +124,31 @@ $$\text{DCG@K} = \sum_{i=1}^{K} \frac{2^{rel_i} - 1}{\log_2(i + 1)}$$
 $$\text{NDCG@K} = \frac{\text{DCG@K}}{\text{IDCG@K}}$$
 *(Where IDCG is the Ideal DCG, obtained by sorting all documents by their true relevance score).*
 
-## 5. BEIR Benchmark (SciFact)
+## 5. Experiment 001: BM25 Lexical Baseline
 
-To prove the efficacy of my BM25 implementation, I benchmarked it against the **SciFact** dataset from the BEIR benchmark suite. The dataset consists of 5,183 real-world scientific documents and 300 queries.
+### Overview
+The goal of this experiment is to establish a strong, non-neural lexical baseline using a raw BM25 algorithm. This baseline will be used to measure the efficacy of future Dense Retrieval, Hybrid Fusion, and Neural Reranking implementations.
 
-**Results (Raw BM25, no Tokenizer):**
-- **Average NDCG@10:** `0.5379`
-- **Average MRR:** `0.5176`
-- **Average Recall@100:** `0.7894`
+### Setup
+- **Dataset**: BEIR - SciFact (5,183 scientific documents, 300 queries)
+- **Method**: Raw BM25 (No tokenizer, no stopword removal, no stemming)
+- **Parameters**: 
+  - `k1` (Term frequency saturation) = `1.5`
+  - `b` (Length normalization) = `0.75`
 
-Despite being a pure keyword-matching algorithm (with no stopwords removal or stemming), the raw BM25 engine achieves an MRR of `0.51`, meaning the very first highly relevant scientific document appears on average at rank #2.
+### Metrics
+| Metric | Score |
+|--------|-------|
+| **Recall@10** | `0.6446` |
+| **Recall@100** | `0.7894` |
+| **MRR@10** | `0.5105` |
+| **NDCG@10** | `0.5379` |
+
+### Observations
+1. **High MRR**: An MRR@10 of `0.5105` indicates that, on average, the very first relevant scientific document is placed at Rank 2. For a purely lexical search engine operating on complex scientific text, this is exceptionally high.
+2. **Solid Recall**: Retrieving nearly 79% of all relevant documents in the top 100 results (`Recall@100 = 0.7894`) proves that BM25 is an incredibly strong candidate generator. This means a downstream Neural Reranker will have an excellent pool of candidates to pull from.
+3. **Execution Speed**: Indexing over 5,000 documents in ~0.65 seconds proves the underlying data structures are highly optimized for a Python-native implementation.
+
+### Failures
+1. **Vocabulary Mismatch**: Because the BM25 engine relies on exact keyword matching, it completely fails when a query uses synonyms (e.g., "AI" vs "Artificial Intelligence").
+2. **No Semantic Understanding**: The engine does not understand the *context* of the scientific abstracts. It simply looks for term frequency, which can lead to "keyword soup" documents ranking artificially high if they happen to contain the query terms out of context.
