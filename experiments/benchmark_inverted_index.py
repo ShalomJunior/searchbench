@@ -2,9 +2,9 @@ import time
 import random
 from collections import defaultdict
 
-def generate_dummy_corpus(size=100000):
+def generate_synthetic_corpus(num_docs: int = 100000) -> dict[int, str]:
     """Generates a large dictionary of random documents."""
-    print(f"Generating corpus of {size} documents...")
+    print(f"Generating corpus of {num_docs} documents...")
     vocab = [
         "machine", "learning", "python", "data", "science", "algorithm", "cloud", "computing",
         "artificial", "intelligence", "neural", "network", "deep", "reinforcement", "supervised",
@@ -12,12 +12,12 @@ def generate_dummy_corpus(size=100000):
         "recall", "f1", "tensor", "gradient", "descent", "optimization", "loss", "function"
     ]
     corpus = {}
-    for i in range(size):
+    for i in range(num_docs):
         # Create random documents of 10-20 words each
         corpus[i] = " ".join(random.choices(vocab, k=random.randint(10, 20)))
     return corpus
 
-def build_index(corpus):
+def build_index(corpus: dict[int, str]) -> defaultdict[str, list[int]]:
     """Builds the inverted index from the corpus."""
     print("Building inverted index...")
     index = defaultdict(list)
@@ -26,7 +26,7 @@ def build_index(corpus):
             index[word].append(doc_id)
     return index
 
-def naive_search(query, corpus):
+def naive_search(query: str, corpus: dict[int, str]) -> list[int]:
     """O(N) linear scan across all documents."""
     results = []
     query_terms = query.split()
@@ -36,7 +36,7 @@ def naive_search(query, corpus):
             results.append(doc_id)
     return results
 
-def indexed_search(query, index):
+def indexed_search(query: str, index: defaultdict[str, list[int]]) -> list[int]:
     """O(1) dictionary lookups to find candidate documents."""
     query_terms = query.split()
     candidate_ids = set()
@@ -45,10 +45,10 @@ def indexed_search(query, index):
             candidate_ids.update(index[term])
     return list(candidate_ids)
 
-def run_benchmark():
+def run_benchmark() -> None:
     """Executes the benchmark and profiles the runtime."""
     # 1. Setup Data
-    corpus = generate_dummy_corpus(100000)
+    corpus = generate_synthetic_corpus(100000)
     
     # 2. Pre-computation phase
     start_time = time.time()
@@ -77,7 +77,7 @@ def run_benchmark():
     print(f"Speedup: The inverted index is {speedup:.2f}x faster.")
 
 
-def main():
+def main() -> None:
     run_benchmark()
 
 
