@@ -1,4 +1,5 @@
 import math
+import heapq
 from collections import defaultdict
 
 
@@ -58,10 +59,11 @@ class BM25Engine:
                 score += idf * (num / den)
         return score
 
-    def search(self, query, corpus):
+    def search(self, query, corpus, top_k=100):
         """
         Executes a search query against the corpus using BM25 ranking.
-        Uses the inverted index for O(1) candidate filtering.
+        Uses the inverted index for O(1) candidate filtering, and a min-heap
+        for O(C log K) Top-K ranking.
         """
         query_tokens = query.split()
 
@@ -78,7 +80,8 @@ class BM25Engine:
             doc_tokens = corpus[doc_id].split()
             scores[doc_id] = self.score(query_tokens, doc_id, doc_tokens)
 
-        ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        # Optimize O(C log C) sorting to O(C log K) using a heap
+        ranked = heapq.nlargest(top_k, scores.items(), key=lambda x: x[1])
         return ranked
 
 
