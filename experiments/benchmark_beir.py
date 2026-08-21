@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.bm25 import BM25Engine
 from src.evaluation.metrics import ndcg_at_k, mrr, recall_at_k
 
-def load_beir_dataset(dataset_name="scifact"):
+def load_beir_dataset(dataset_name: str = "scifact") -> tuple[dict[str, dict[str, str]], dict[str, str], dict[str, dict[str, int]]]:
     """Downloads and loads a BEIR dataset."""
     url = f"https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{dataset_name}.zip"
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,7 +31,7 @@ def load_beir_dataset(dataset_name="scifact"):
     return corpus, queries, qrels
 
 
-def main():
+def main() -> None:
     # 1. Load the data
     beir_corpus, queries, qrels = load_beir_dataset("scifact")
 
@@ -49,18 +49,11 @@ def main():
     print("Building BM25 Index...")
     start_time = time.time()
 
-    # TODO: Call your engine.fit() on the flat_corpus
     engine.fit(flat_corpus)
 
     print(f"Index built in {time.time() - start_time:.4f} seconds.")
 
     # 4. Evaluation Loop
-    # TODO: Loop through the `queries` dictionary.
-    # For each query:
-    #   - Run engine.search()
-    #   - Check the `qrels` dictionary for the ground truth scores for that query
-    #   - Calculate NDCG@10, MRR, and Recall@100
-    # Average the metrics across all queries and print the final results.
     ndcg_list = []
     mrr_10_list = []
     recall_10_list = []

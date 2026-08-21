@@ -1,8 +1,10 @@
 from collections import defaultdict
 from math import log
 
+DocID = str | int
+
 # Toy Corpus
-documents = {
+documents: dict[DocID, str] = {
     1: "machine learning is fascinating",
     2: "artificial intelligence and machine learning",
     3: "the history of artificial intelligence",
@@ -10,38 +12,38 @@ documents = {
 }
 
 
-def build_index(corpus):
+def build_index(corpus: dict[DocID, str]) -> defaultdict[str, list[DocID]]:
     """
     Should return an inverted index and any other metadata (like document lengths)
     needed for scoring.
     """
-    index = defaultdict(list)
+    index: defaultdict[str, list[DocID]] = defaultdict(list)
     for id, text in corpus.items():
         for word in set(text.split()):
             index[word].append(id)
     return index
 
 
-def tf(term, doc_tokens):
+def tf(term: str, doc_tokens: list[str]) -> float:
     """Calculate term frequency."""
     if not doc_tokens:
         return 0.0
     return doc_tokens.count(term) / len(doc_tokens)
 
 
-def idf(term, corpus, index):
+def idf(term: str, corpus: dict[DocID, str], index: defaultdict[str, list[DocID]]) -> float:
     """Calculate inverse document frequency."""
     if not term in index:
         return 0.0
     return log(len(corpus) / len(index[term]))
 
 
-def tfidf(term, doc_tokens, corpus, index):
+def tfidf(term: str, doc_tokens: list[str], corpus: dict[DocID, str], index: defaultdict[str, list[DocID]]) -> float:
     """Calculate the full TF-IDF score."""
     return tf(term, doc_tokens) * idf(term, corpus, index)
 
 
-def search(query, corpus, index):
+def search(query: str, corpus: dict[DocID, str], index: defaultdict[str, list[DocID]]) -> list[tuple[DocID, float]]:
     """
     Process the query, calculate cosine similarity between the query
     and all documents, and return a ranked list of document IDs.

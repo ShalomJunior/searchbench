@@ -2,20 +2,22 @@ import math
 import heapq
 from collections import defaultdict
 
+DocID = str | int
+
 
 class BM25Engine:
-    def __init__(self, k1=1.5, b=0.75):
+    def __init__(self, k1: float = 1.5, b: float = 0.75) -> None:
         self.k1 = k1
         self.b = b
-        self.index = defaultdict(list)
-        self.doc_lengths = {}
-        self.avgdl = 0.0
-        self.total_docs = 0
-        self.idf_cache = {}
+        self.index: dict[str, list[DocID]] = defaultdict(list)
+        self.doc_lengths: dict[DocID, int] = {}
+        self.avgdl: float = 0.0
+        self.total_docs: int = 0
+        self.idf_cache: dict[str, float] = {}
 
-    def fit(self, corpus):
+    def fit(self, corpus: dict[DocID, str]) -> None:
         """
-        TODO: Implement the indexing phase.
+        Populates the inverted index and precomputes document lengths.
         1. Populate self.index with the inverted index.
         2. Populate self.doc_lengths with the length of each document.
         3. Calculate self.avgdl (average document length).
@@ -31,10 +33,10 @@ class BM25Engine:
         if self.total_docs > 0:
             self.avgdl /= self.total_docs
 
-    def compute_idf(self, term):
+    def compute_idf(self, term: str) -> float:
         """
-        TODO: Implement the IDF calculation for a single term.
-        Use the standard formula: math.log( (N - df + 0.5) / (df + 0.5) + 1 )
+        Calculates and caches the Inverse Document Frequency (IDF) for a term.
+        Uses standard BM25 IDF formula: math.log( (N - df + 0.5) / (df + 0.5) + 1 )
         where N is total_docs and df is the number of documents containing the term.
         """
         if term not in self.idf_cache:
@@ -43,9 +45,9 @@ class BM25Engine:
             self.idf_cache[term] = math.log(1 + (N - df + 0.5) / (df + 0.5))
         return self.idf_cache[term]
 
-    def score(self, query_tokens, doc_id, doc_tokens):
+    def score(self, query_tokens: list[str], doc_id: DocID, doc_tokens: list[str]) -> float:
         """
-        TODO: Implement the BM25 mathematical formula provided above.
+        Computes the final BM25 score for a specific document against a query.
         Return the final float score for this document against the query.
         """
         score = 0.0
@@ -59,7 +61,7 @@ class BM25Engine:
                 score += idf * (num / den)
         return score
 
-    def search(self, query, corpus, top_k=100):
+    def search(self, query: str, corpus: dict[DocID, str], top_k: int = 100) -> list[tuple[DocID, float]]:
         """
         Executes a search query against the corpus using BM25 ranking.
         Uses the inverted index for O(1) candidate filtering, and a min-heap

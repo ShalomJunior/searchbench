@@ -10,7 +10,7 @@ from src.tfidf import build_index as tfidf_build_index
 from src.tfidf import search as tfidf_search
 
 
-def main():
+def main() -> None:
     print("=== TF-IDF vs BM25: Metrics Benchmark ===")
 
     # A robust 9-document corpus to properly evaluate Top-K ranking

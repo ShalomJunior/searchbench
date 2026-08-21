@@ -1,13 +1,15 @@
 import math
 
+DocID = str | int
 
-def precision_at_k(retrieved_ids, relevant_ids, k=10):
+
+def precision_at_k(retrieved_ids: list[DocID], relevant_ids: list[DocID], k: int = 10) -> float:
     """Calculate Precision@K."""
     inter = list(set(retrieved_ids[:k]) & set(relevant_ids))
     return len(inter) / k
 
 
-def recall_at_k(retrieved_ids, relevant_ids, k=10):
+def recall_at_k(retrieved_ids: list[DocID], relevant_ids: list[DocID], k: int = 10) -> float:
     """Calculate Recall@K."""
     if not relevant_ids:
         return 0.0
@@ -15,7 +17,7 @@ def recall_at_k(retrieved_ids, relevant_ids, k=10):
     return len(inter) / len(relevant_ids)
 
 
-def mrr(retrieved_ids, relevant_ids, k=None):
+def mrr(retrieved_ids: list[DocID], relevant_ids: list[DocID], k: int | None = None) -> float:
     """Calculate Reciprocal Rank for a single query."""
     rel = set(relevant_ids)
     if k is not None:
@@ -28,7 +30,7 @@ def mrr(retrieved_ids, relevant_ids, k=None):
     return 0.0
 
 
-def dcg(retrieved_ids, relevant_scores_dict, k=10):
+def dcg(retrieved_ids: list[DocID], relevant_scores_dict: dict[DocID, int], k: int = 10) -> float:
     if not retrieved_ids:
         return 0.0
     ids = retrieved_ids[:k]
@@ -40,7 +42,7 @@ def dcg(retrieved_ids, relevant_scores_dict, k=10):
     )
 
 
-def ndcg_at_k(retrieved_ids, relevant_scores_dict, k=10):
+def ndcg_at_k(retrieved_ids: list[DocID], relevant_scores_dict: dict[DocID, int], k: int = 10) -> float:
     """
     Calculate NDCG@K.
     relevant_scores_dict maps doc_id to a graded relevance score (e.g., {doc_id: 3}).
