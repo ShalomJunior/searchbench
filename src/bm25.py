@@ -101,9 +101,9 @@ def parameter_experiment():
     print("Doc 1: short (1 hit) vs Doc 3: long (1 hit)")
     for b in [0.0, 0.5, 0.75, 1.0]:
         engine = BM25Engine(k1=1.5, b=b)
-        engine.fit(toy_corpus)
-        res1 = engine.score(query.split(), 1, toy_corpus[1].split())
-        res3 = engine.score(query.split(), 3, toy_corpus[3].split())
+        engine.fit(toy_corpus) # type: ignore
+        res1 = engine.score(query.split(), 1, toy_corpus[1].split()) # type: ignore
+        res3 = engine.score(query.split(), 3, toy_corpus[3].split()) # type: ignore
         print(f"b={b:<4} | Doc 1 (short): {res1:.4f} | Doc 3 (long): {res3:.4f}")
 
     print("\n--- Testing Term Frequency Saturation (k1) ---")
@@ -111,9 +111,9 @@ def parameter_experiment():
     print("Doc 1: 1 hit vs Doc 2: 5 hits")
     for k1 in [0.1, 1.5, 3.0, 10.0]:
         engine = BM25Engine(k1=k1, b=0.75)
-        engine.fit(toy_corpus)
-        res1 = engine.score(query.split(), 1, toy_corpus[1].split())
-        res2 = engine.score(query.split(), 2, toy_corpus[2].split())
+        engine.fit(toy_corpus) # type: ignore
+        res1 = engine.score(query.split(), 1, toy_corpus[1].split()) # type: ignore
+        res2 = engine.score(query.split(), 2, toy_corpus[2].split()) # type: ignore
         print(f"k1={k1:<4} | Doc 1 (1 hit): {res1:.4f} | Doc 2 (5 hits): {res2:.4f}")
 
 
