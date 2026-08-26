@@ -441,18 +441,42 @@ I ran a parameter sweep to measure exactly how this constant affects ranking qua
 
 ![RRF Parameter Sensitivity](experiments/rrf_plot.png)
 
-| k | NDCG@10 | MRR@10 | Recall@100 |
-| --- | --- | --- | --- |
-| 1 | 0.6561 | 0.6211 | 0.9310 |
-| 5 | **0.6590** | **0.6239** | 0.9310 |
-| 10 | 0.6504 | 0.6126 | 0.9310 |
-| 20 | 0.6433 | 0.6081 | 0.9310 |
-| 30 | 0.6324 | 0.6042 | 0.9310 |
-| 60 | 0.6245 | 0.6026 | 0.9310 |
-| 100 | 0.6207 | 0.6015 | 0.9310 |
-| 200 | 0.6193 | 0.6011 | 0.9310 |
+| k   | NDCG@10    | MRR@10     | Recall@100 |
+| --- | ---------- | ---------- | ---------- |
+| 1   | 0.6561     | 0.6211     | 0.9310     |
+| 5   | **0.6590** | **0.6239** | 0.9310     |
+| 10  | 0.6504     | 0.6126     | 0.9310     |
+| 20  | 0.6433     | 0.6081     | 0.9310     |
+| 30  | 0.6324     | 0.6042     | 0.9310     |
+| 60  | 0.6245     | 0.6026     | 0.9310     |
+| 100 | 0.6207     | 0.6015     | 0.9310     |
+| 200 | 0.6193     | 0.6011     | 0.9310     |
 
 ### Key Observations
+
 1. **Low $k$ wins on SciFact**: The absolute peak performance was achieved at $k=5$. Because BM25 is a very weak ranker on this highly semantic dataset, making $k$ very small creates a steep mathematical drop-off. This heavily rewards documents that appear at Rank 1 or Rank 2 of the Dense engine, minimizing the "dilution" effect from BM25's lower-quality rankings.
 2. **High $k$ acts as a massive equalizer**: As $k$ grows (approaching 200), the difference between Rank 1 ($1/201 \approx 0.0049$) and Rank 10 ($1/210 \approx 0.0047$) becomes practically zero. The fusion becomes too uniform, stripping away the valuable high-confidence signals from the Dense engine and lowering the NDCG score.
-3. **Recall is invariant**: Notice how Recall@100 is perfectly flat at $0.9310$ for all values of $k$. Changing $k$ only reorders the documents *inside* the retrieved pool; it doesn't magically find new documents that neither base engine retrieved in their initial Top K.
+3. **Recall is invariant**: Notice how Recall@100 is perfectly flat at $0.9310$ for all values of $k$. Changing $k$ only reorders the documents _inside_ the retrieved pool; it doesn't magically find new documents that neither base engine retrieved in their initial Top K.
+
+## 15. Pipeline Latency Analysis
+
+Before pushing a search architecture to production, it is critical to profile its latency. A search engine that returns perfect results in 5 seconds is fundamentally broken from a UX perspective. Industry standard typically aims for sub-200ms latency.
+
+I ran a precision benchmark over 300 queries on the SciFact dataset to measure the exact millisecond overhead of our unoptimized Python implementation.
+
+### Results (Sequential Execution)
+
+| Pipeline Component    | Average Latency per Query |
+| --------------------- | ------------------------- |
+| BM25 Engine           | 242.59 ms                 |
+| Dense Engine (MiniLM) | 15.73 ms                  |
+| RRF Fusion Overhead   | 1.40 ms                   |
+| **Total Pipeline**    | **259.73 ms**             |
+
+### Key Observations
+
+1. **The Math is Instant**: The Reciprocal Rank Fusion overhead is just `1.40 ms`. This proves that the actual fusion algorithm is computationally "free". It adds zero meaningful latency to the pipeline.
+2. **Dense Retrieval is Blazing Fast**: Thanks to FAISS (C++ backend) and the lightweight `all-MiniLM-L6-v2` model, our dense search executes in an incredible `15.73 ms`. This proves that Approximate Nearest Neighbors (ANN) successfully solves the $O(N)$ scaling problem for semantic search.
+3. **BM25 is the Bottleneck**: Our BM25 implementation is currently running at `242.59 ms`. This is incredibly slow for a lexical engine! The reason is simple: our current Python implementation splits the document text (`.split()`) and counts terms (`.count()`) dynamically at query time rather than relying strictly on pre-computed Inverted Index frequencies. This is a massive $O(C)$ operation that scales horribly.
+
+_(Note: In a true production environment, BM25 and Dense Retrieval are executed asynchronously in parallel, meaning the theoretical total latency would be bottlenecked strictly by the slowest component: `max(BM25, Dense) + Fusion`)._
