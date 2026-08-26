@@ -317,3 +317,71 @@ Before building a hybrid engine, I benchmarked three different embedding models 
 1. **BGE Dominates Small Models**: The `bge-small-en-v1.5` model achieved an incredible `0.7200` NDCG while keeping the exact same memory footprint (7.59 MB) as the MiniLM baseline. It is currently the State-Of-The-Art for small models.
 2. **Bigger Is Not Always Better**: The heavy `all-mpnet-base-v2` model took nearly 45 minutes to encode the corpus on a CPU (`2692.71s`), doubled the memory footprint to `15.18 MB`, and increased query latency to `70ms`—yet it scored _worse_ than the BGE small model (`0.6557`). This proves that model architecture and training data (BGE's contrastive training) matter more than pure parameter size.
 3. **The Baseline is Fast**: `all-MiniLM-L6-v2` remains exceptionally fast, executing queries in just `13ms`. If extreme low latency is required, it is still a highly viable option.
+
+## 11. The Lexical vs. Semantic Divide (Hybrid Architecture)
+
+Before writing the fusion algorithms for a Hybrid Search engine, we must understand exactly _why_ combining two distinct systems is the industry standard for production search architecture. Users search in fundamentally different ways depending on their intent, and each engine is blind to the other's strengths.
+
+### 1. BM25 (Exact Lexical Matching)
+
+BM25 excels at high-precision entity extraction. It treats queries as a bag-of-words and looks for exact term overlap and frequency.
+
+- **The Query**: `"Taylor Swift"` or `"H2O2 boiling point"`
+- **Why Dense Fails**: A Bi-Encoder might compress "Taylor Swift" into a generic "American pop star" vector. It might return an article about Ariana Grande because the mathematical vectors for both singers sit very close together in the high-dimensional embedding space.
+- **Why BM25 Wins**: It demands to see the exact tokens "Taylor" and "Swift", ruthlessly filtering out any document that doesn't contain that specific entity.
+
+### 2. Dense Retrieval (Semantic Matching)
+
+Dense embeddings excel at conceptual understanding, synonym mapping, and bridging the vocabulary gap.
+
+- **The Query**: `"What is the capital city of Morocco?"`
+- **Why BM25 Fails**: A document that perfectly answers this might simply state: _"Rabat serves as the political center of the North African nation."_ BM25 will give this a low score because it misses the exact words "capital", "city", and "Morocco".
+- **Why Dense Wins**: The Bi-Encoder mathematically understands that "political center" maps to "capital city", and "North African nation" is semantically linked to "Morocco". It retrieves the document based on contextual meaning, not raw syntax.
+
+### The Hybrid Solution
+
+By running both engines in parallel and mathematically fusing their ranked lists (a process known as Reciprocal Rank Fusion), we create a robust safety net. **BM25 anchors the search to specific entities, while the Dense engine expands the search to capture conceptual intent.**
+
+## 12. Hybrid Search: Simple Score Fusion
+
+To fuse the two engines together, we must solve a fundamental mathematical problem: **Scale mismatch**. BM25 scores are unbounded (often ranging from 0 to 50+), while Dense scores (Cosine Similarity) are strictly bounded between -1.0 and 1.0.
+
+If we simply add them together, BM25 will completely overpower the Dense engine.
+
+### The Solution: Min-Max Normalization
+
+Before combining the lists, we force both sets of scores onto a strict `[0.0, 1.0]` scale using Min-Max normalization. Once normalized, we use a tuning weight ($\alpha$) to create a **Convex Combination**:
+
+$$\text{Final Score} = \alpha \cdot \text{BM25}_{\text{norm}} + (1 - \alpha) \cdot \text{Dense}_{\text{norm}}$$
+
+### Experiment Results (The Alpha Sweep)
+
+I ran a grid search over the SciFact dataset to see how the tuning parameter ($\alpha$) affects the overall retrieval quality.
+
+| Alpha  | Interpretation       | NDCG@10    | MRR        | Recall@100 |
+| ------ | -------------------- | ---------- | ---------- | ---------- |
+| `0.00` | 100% Dense           | 0.6451     | 0.6110     | 0.9283     |
+| `0.25` | Dense-Heavy Hybrid   | **0.6750** | **0.6386** | **0.9383** |
+| `0.50` | Balanced Hybrid      | 0.6658     | 0.6317     | 0.9293     |
+| `0.75` | Lexical-Heavy Hybrid | 0.5889     | 0.5691     | 0.9210     |
+| `1.00` | 100% BM25            | 0.5379     | 0.5172     | 0.7928     |
+
+### Key Takeaways
+
+1. **The Architecture Works!** The Hybrid approach (`Alpha = 0.25`) significantly outperformed both pure BM25 (`0.5379`) and pure Dense (`0.6451`), pushing our NDCG@10 to a new peak of **0.6750**.
+2. **SciFact is Semantic-Heavy**: Because scientific claims require deep contextual understanding rather than just keyword matching, the optimal fusion heavily favors the Dense Engine (75% Dense / 25% BM25).
+3. **The Power of Synergy**: By combining the exact entity matching of BM25 with the conceptual understanding of Dense Embeddings, we achieved the highest Recall (`0.9383`) the system has ever seen.
+
+### Follow-up Experiment: Using a Stronger Dense Model (BGE)
+
+I re-ran the exact same Alpha Sweep, but replaced the baseline `all-MiniLM-L6-v2` with the much stronger `BAAI/bge-small-en-v1.5`. The results were fascinating:
+
+| Alpha  | Interpretation       | NDCG@10    | MRR        | Recall@100 |
+| ------ | -------------------- | ---------- | ---------- | ---------- |
+| `0.00` | 100% Dense (BGE)     | **0.7200** | **0.6880** | **0.9533** |
+| `0.25` | Dense-Heavy Hybrid   | 0.7189     | 0.6856     | 0.9483     |
+| `0.50` | Balanced Hybrid      | 0.6876     | 0.6550     | 0.9450     |
+| `0.75` | Lexical-Heavy Hybrid | 0.5971     | 0.5775     | 0.9400     |
+| `1.00` | 100% BM25            | 0.5379     | 0.5172     | 0.7934     |
+
+**The Takeaway**: When your Dense Model is _incredibly_ strong (BGE scored 0.7200 by itself), blending it with a weaker lexical model (BM25 scored 0.5379) can actually dilute the results. In this specific configuration, Pure Dense beat the Hybrid! This highlights why we benchmark everything—there is no "one size fits all" formula in search.
