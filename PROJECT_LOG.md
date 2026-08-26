@@ -44,7 +44,13 @@ To search, I treat the query and every document as mathematical vectors in a hig
 
 $$\text{Cosine Similarity} = \frac{\mathbf{q} \cdot \mathbf{d}}{\Vert{}\mathbf{q}\Vert{} \Vert{}\mathbf{d}\Vert{}}$$
 
-## 2. Benchmark: Naive vs Inverted Index
+## 2. The Inverted Index & Performance Benchmark
+
+Before benchmarking, it is critical to understand the core components of the Inverted Index architecture:
+
+- **Postings / Posting Lists**: The list of document IDs attached to a term in your index. For example, in `{"python": [4, 12, 99]}`, the list `[4, 12, 99]` is the posting list.
+- **Document Frequency (DF)**: The length of that posting list. This tells you how common the word is across the corpus.
+- **Intersection**: When a query has multiple words (e.g., "machine learning"), a highly optimized engine will grab the posting list for "machine" and the posting list for "learning", and find the intersection (the document IDs that appear in both) to further reduce the candidate pool.
 
 To prove why an inverted index is strictly necessary for web-scale retrieval, I benchmarked an $O(N)$ linear scan against an $O(1)$ inverted index lookup over a synthetic corpus of 100,000 documents.
 
@@ -258,3 +264,27 @@ The goal of this experiment is to establish a semantic search baseline using a n
 1. **Massive Quality Increase**: Dense retrieval drastically outperformed raw BM25 across every single metric. Recall@100 jumped from 78.9% to an incredible 92.5%, proving that semantic search is significantly better at finding relevant scientific documents even when exact keywords are missing.
 2. **Computational Expense**: Encoding the 5,000 document corpus on a CPU took nearly 9 minutes, compared to BM25's 0.65 seconds. However, once the index was built, searching all 300 queries using FAISS took only ~10 seconds. This highlights the architectural necessity of pre-computing embeddings offline.
 3. **The Semantic Advantage**: The model successfully bridged the vocabulary gap. A query searching for "neural networks" successfully retrieved documents discussing "deep learning" because the model understood they exist in the same semantic space.
+
+## 9. Error Analysis: BM25 vs Dense Retrieval
+
+To truly understand our search system, we must understand its failure modes. I wrote a script to run both engines side-by-side on the 300 queries, calculate their individual NDCG scores, and categorize their contrasting performance. 
+
+Out of 300 queries, the script found:
+- **8 Pure BM25 Wins** (BM25 was perfect, Dense failed)
+- **32 Pure Dense Wins** (Dense was perfect, BM25 failed)
+- **47 Mutual Failures** (Both failed completely)
+
+By manually reading through the generated `error_analysis_report.json`, clear patterns emerged:
+
+### Why Dense Retrieval Fails (BM25 Wins)
+Dense retrieval networks (Bi-Encoders) map text into a continuous semantic space. While incredible for meaning, they struggle severely with **Out-Of-Vocabulary (OOV) entities, acronyms, and highly specific identifiers**.
+- **Example**: For the query *"Activation of PPM1D suppresses p53 function"*, BM25 perfectly found the document matching the exact string "PPM1D". The Dense engine completely missed the document and returned a generic paper about the "p53" function. Because "PPM1D" is a rare, highly specific gene identifier, the Dense neural network likely compressed it into a generic "gene" vector, completely losing the exact specificity required to answer the query.
+
+### Why BM25 Fails (Dense Wins)
+BM25 relies entirely on keyword overlap. It fails catastrophically when dealing with **synonyms, implicit context, or vocabulary mismatch**.
+- **Example**: For the query *"Macrolides protect against myocardial infarction"*, BM25 failed to find the ground truth document because the document discussed "erythromycin" (which is a type of macrolide) and "cardiac remodeling after MI". The Dense engine perfectly retrieved the ground truth document because its vector space mathematically understands that "erythromycin" is semantically grouped with "macrolides". BM25 simply saw that the exact string "macrolide" was missing, and scored it as a zero.
+
+### The Conclusion
+BM25 is a precision instrument for exact matches. Dense retrieval is a broad net for semantic meaning. Because their failure modes are almost perfectly orthogonal, blindly picking one over the other is an architectural mistake. 
+
+The only logical next step is to combine them.
