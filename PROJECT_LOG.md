@@ -206,34 +206,41 @@ We solve this using **Approximate Nearest Neighbors (ANN)** libraries like Faceb
 
 ## 7. The Theory of Approximate Nearest Neighbors (ANN)
 
-Dense retrieval calculates the Cosine Similarity (Inner Product) between a query vector and document vectors. However, comparing a single query vector against 100 million document vectors at query time (Exact Search) is computationally impossible for a low-latency web application. 
+Dense retrieval calculates the Cosine Similarity (Inner Product) between a query vector and document vectors. However, comparing a single query vector against 100 million document vectors at query time (Exact Search) is computationally impossible for a low-latency web application.
 
 This introduces the need for **Approximate Nearest Neighbors (ANN)**, where we intentionally sacrifice a tiny fraction of Recall (accuracy) to gain a massive speedup in Latency.
 
 ### Exact Search vs. Approximate Search
-- **Exact Nearest Neighbor (Flat Index)**: Computes the distance between the query and *every single document*. 
-  - *Pros*: Guarantees finding the absolute best matches (100% Recall).
-  - *Cons*: Scales linearly $O(N)$. At millions of documents, latency becomes unacceptable.
+
+- **Exact Nearest Neighbor (Flat Index)**: Computes the distance between the query and _every single document_.
+  - _Pros_: Guarantees finding the absolute best matches (100% Recall).
+  - _Cons_: Scales linearly $O(N)$. At millions of documents, latency becomes unacceptable.
 - **Approximate Nearest Neighbor (ANN)**: Uses clever data structures to only compare the query against a small "neighborhood" of highly likely candidates.
-  - *Pros*: Scales logarithmically $O(\log N)$ or sub-linearly. Enables millisecond latency on billions of documents.
-  - *Cons*: Might miss the true best match if it falls outside the probed neighborhood.
+  - _Pros_: Scales logarithmically $O(\log N)$ or sub-linearly. Enables millisecond latency on billions of documents.
+  - _Cons_: Might miss the true best match if it falls outside the probed neighborhood.
 
 ### Core ANN Algorithms
 
 #### 1. Inverted File Index (IVF)
+
 IVF solves the scaling problem by clustering the vector space.
+
 - **How it works**: During indexing, IVF runs K-Means clustering to partition the vector space into $V$ clusters (Voronoi cells). Each cluster has a centroid.
-- **Search**: Instead of scanning all documents, the query is compared only to the $V$ centroids. Once the closest centroid is found, the system only computes exact distances for the documents *inside that specific cluster*.
+- **Search**: Instead of scanning all documents, the query is compared only to the $V$ centroids. Once the closest centroid is found, the system only computes exact distances for the documents _inside that specific cluster_.
 - **Tradeoff**: You can increase Recall by probing multiple nearby clusters (increasing `nprobe`), but this directly increases Latency.
 
 #### 2. Hierarchical Navigable Small World (HNSW)
+
 HNSW solves the scaling problem using a multi-layered graph.
+
 - **How it works**: HNSW builds a skip-list-like graph structure. The top layer has very few, long-distance connections (highways). As you move down the layers, the graph becomes denser with local connections (city streets).
 - **Search**: A query enters the top layer, rapidly jumping across long distances to find the general neighborhood, then drops down to lower layers to fine-tune the search among local neighbors.
 - **Tradeoff**: HNSW provides incredibly fast search latency and extremely high Recall, but building the graph during indexing is very slow and consumes a massive amount of RAM compared to IVF.
 
 ### The Recall vs. Latency Tradeoff
+
 In system design, ANN forces a strict engineering tradeoff:
+
 - If you optimize strictly for **Recall**, you probe more clusters (IVF) or search deeper in the graph (HNSW), which drives up **Latency**.
 - If you optimize strictly for **Latency**, you probe fewer clusters, but you risk missing the true nearest neighbors, dropping your **Recall**.
 - **Memory** is the hidden third variable: HNSW is fast and accurate but requires expensive, memory-heavy servers to hold the graph.
@@ -267,9 +274,10 @@ The goal of this experiment is to establish a semantic search baseline using a n
 
 ## 9. Error Analysis: BM25 vs Dense Retrieval
 
-To truly understand our search system, we must understand its failure modes. I wrote a script to run both engines side-by-side on the 300 queries, calculate their individual NDCG scores, and categorize their contrasting performance. 
+To truly understand our search system, we must understand its failure modes. I wrote a script to run both engines side-by-side on the 300 queries, calculate their individual NDCG scores, and categorize their contrasting performance.
 
 Out of 300 queries, the script found:
+
 - **8 Pure BM25 Wins** (BM25 was perfect, Dense failed)
 - **32 Pure Dense Wins** (Dense was perfect, BM25 failed)
 - **47 Mutual Failures** (Both failed completely)
@@ -277,14 +285,35 @@ Out of 300 queries, the script found:
 By manually reading through the generated `error_analysis_report.json`, clear patterns emerged:
 
 ### Why Dense Retrieval Fails (BM25 Wins)
+
 Dense retrieval networks (Bi-Encoders) map text into a continuous semantic space. While incredible for meaning, they struggle severely with **Out-Of-Vocabulary (OOV) entities, acronyms, and highly specific identifiers**.
-- **Example**: For the query *"Activation of PPM1D suppresses p53 function"*, BM25 perfectly found the document matching the exact string "PPM1D". The Dense engine completely missed the document and returned a generic paper about the "p53" function. Because "PPM1D" is a rare, highly specific gene identifier, the Dense neural network likely compressed it into a generic "gene" vector, completely losing the exact specificity required to answer the query.
+
+- **Example**: For the query _"Activation of PPM1D suppresses p53 function"_, BM25 perfectly found the document matching the exact string "PPM1D". The Dense engine completely missed the document and returned a generic paper about the "p53" function. Because "PPM1D" is a rare, highly specific gene identifier, the Dense neural network likely compressed it into a generic "gene" vector, completely losing the exact specificity required to answer the query.
 
 ### Why BM25 Fails (Dense Wins)
+
 BM25 relies entirely on keyword overlap. It fails catastrophically when dealing with **synonyms, implicit context, or vocabulary mismatch**.
-- **Example**: For the query *"Macrolides protect against myocardial infarction"*, BM25 failed to find the ground truth document because the document discussed "erythromycin" (which is a type of macrolide) and "cardiac remodeling after MI". The Dense engine perfectly retrieved the ground truth document because its vector space mathematically understands that "erythromycin" is semantically grouped with "macrolides". BM25 simply saw that the exact string "macrolide" was missing, and scored it as a zero.
+
+- **Example**: For the query _"Macrolides protect against myocardial infarction"_, BM25 failed to find the ground truth document because the document discussed "erythromycin" (which is a type of macrolide) and "cardiac remodeling after MI". The Dense engine perfectly retrieved the ground truth document because its vector space mathematically understands that "erythromycin" is semantically grouped with "macrolides". BM25 simply saw that the exact string "macrolide" was missing, and scored it as a zero.
 
 ### The Conclusion
-BM25 is a precision instrument for exact matches. Dense retrieval is a broad net for semantic meaning. Because their failure modes are almost perfectly orthogonal, blindly picking one over the other is an architectural mistake. 
+
+BM25 is a precision instrument for exact matches. Dense retrieval is a broad net for semantic meaning. Because their failure modes are almost perfectly orthogonal, blindly picking one over the other is an architectural mistake.
 
 The only logical next step is to combine them.
+
+## 10. Embedding Model Comparison (Quality vs. Latency vs. Memory)
+
+Before building a hybrid engine, I benchmarked three different embedding models to evaluate the architectural trade-offs of Dense Retrieval on the SciFact dataset.
+
+| Model                    | NDCG@10 | Encode (s) | Latency (ms) | Index (MB) |
+| ------------------------ | ------- | ---------- | ------------ | ---------- |
+| `all-MiniLM-L6-v2`       | 0.6451  | 237.85     | 13.52        | 7.59       |
+| `BAAI/bge-small-en-v1.5` | 0.7200  | 705.58     | 42.94        | 7.59       |
+| `all-mpnet-base-v2`      | 0.6557  | 2692.71    | 70.09        | 15.18      |
+
+### Key Takeaways
+
+1. **BGE Dominates Small Models**: The `bge-small-en-v1.5` model achieved an incredible `0.7200` NDCG while keeping the exact same memory footprint (7.59 MB) as the MiniLM baseline. It is currently the State-Of-The-Art for small models.
+2. **Bigger Is Not Always Better**: The heavy `all-mpnet-base-v2` model took nearly 45 minutes to encode the corpus on a CPU (`2692.71s`), doubled the memory footprint to `15.18 MB`, and increased query latency to `70ms`—yet it scored _worse_ than the BGE small model (`0.6557`). This proves that model architecture and training data (BGE's contrastive training) matter more than pure parameter size.
+3. **The Baseline is Fast**: `all-MiniLM-L6-v2` remains exceptionally fast, executing queries in just `13ms`. If extreme low latency is required, it is still a highly viable option.
