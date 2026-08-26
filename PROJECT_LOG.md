@@ -385,3 +385,46 @@ I re-ran the exact same Alpha Sweep, but replaced the baseline `all-MiniLM-L6-v2
 | `1.00` | 100% BM25            | 0.5379     | 0.5172     | 0.7934     |
 
 **The Takeaway**: When your Dense Model is _incredibly_ strong (BGE scored 0.7200 by itself), blending it with a weaker lexical model (BM25 scored 0.5379) can actually dilute the results. In this specific configuration, Pure Dense beat the Hybrid! This highlights why we benchmark everything—there is no "one size fits all" formula in search.
+
+## 13. Reciprocal Rank Fusion (RRF)
+
+While Simple Score Fusion (Weighted Hybrid) yielded excellent results, it has a major architectural flaw in production: **Maintenance Nightmare**.
+Because BM25 scores are unbounded and fluctuate heavily based on corpus size and document length, a tuned $\alpha$ weight might suddenly break when millions of new documents are added to the index.
+
+### The Mathematics
+
+Reciprocal Rank Fusion (RRF) solves this by completely ignoring raw scores. It only looks at the _rank_ (position) of the document.
+
+$$\text{RRF}(d) = \sum \frac{1}{k + \text{rank}(d)}$$
+
+Because it relies purely on ranks, it is completely scale-invariant. A smoothing constant of $k=60$ is the industry standard to prevent top-1 documents from completely dominating the sum.
+
+### The Ultimate Comparison Benchmark
+
+I ran a final benchmark to compare all four architectures across two different semantic models.
+
+**Dense Model: `all-MiniLM-L6-v2`**
+| System | NDCG@10 | MRR | Recall@100 |
+| --- | --- | --- | --- |
+| BM25 (Baseline) | 0.5379 | 0.5171 | 0.7894 |
+| Dense (MiniLM) | 0.6451 | 0.6110 | 0.9250 |
+| Weighted Hybrid ($\alpha=0.25$) | **0.6750** | **0.6386** | **0.9383** |
+| RRF Hybrid ($k=60$) | 0.6245 | 0.6026 | 0.9310 |
+
+**Dense Model: `BAAI/bge-small-en-v1.5`**
+| System | NDCG@10 | MRR | Recall@100 |
+| --- | --- | --- | --- |
+| BM25 (Baseline) | 0.5379 | 0.5171 | 0.7894 |
+| Dense (BGE) | **0.7200** | **0.6880** | **0.9533** |
+| Weighted Hybrid ($\alpha=0.25$) | 0.7189 | 0.6856 | 0.9483 |
+| RRF Hybrid ($k=60$) | 0.6436 | 0.6202 | 0.9417 |
+
+### Why did RRF perform worse here?
+
+In both cases, RRF performed significantly worse than the Weighted Hybrid, and even worse than the pure Dense engine!
+
+This is actually expected for this specific dataset. SciFact is highly semantic. A pure rank-based fusion like RRF inherently assumes that both engines (BM25 and Dense) are somewhat equal in quality, giving their top ranks roughly equal voting power. But for SciFact, BM25 (0.53 NDCG) is vastly inferior to Dense (0.64 / 0.72 NDCG).
+
+By forcing them to have equal weight through RRF, BM25's poor rankings drag down the Dense model's excellent rankings. The Weighted Hybrid allowed us to manually set `alpha=0.25`, explicitly telling the engine to trust Dense 3x more than BM25. RRF has no such tuning knob.
+
+This beautifully illustrates the core trade-off: **RRF gives you extreme stability in production without needing tuning, but Weighted Hybrid gives you the absolute maximum performance _if_ you are willing to maintain the weights.**

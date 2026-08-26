@@ -50,3 +50,30 @@ class WeightedHybridEngine:
 
         sorted_results = sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)
         return sorted_results[:top_k]
+
+class RRFHybridEngine:
+    def __init__(self, bm25_engine: BM25Engine, dense_engine: DenseEngine, k: int = 60) -> None:
+        self.bm25 = bm25_engine
+        self.dense = dense_engine
+        self.k = k
+
+    def search(self, query: str, corpus: dict[DocID, str], top_k: int = 100) -> list[tuple[DocID, float]]:
+        """
+        TODO: Implement Reciprocal Rank Fusion.
+        1. Run self.bm25.search() and self.dense.search().
+        2. Initialize a dictionary mapping DocID -> RRF score (default to 0.0).
+        3. Loop through the BM25 results. For each document, add its RRF score:
+           1.0 / (self.k + rank). Note: rank is 1-indexed (1, 2, 3...).
+        4. Loop through the Dense results and ADD to the same dictionary.
+        5. Sort the dictionary by final RRF score in descending order.
+        6. Return the top_k (DocID, score) tuples.
+        """
+        bm25_results = self.bm25.search(query, corpus, top_k)
+        dense_results = self.dense.search(query, corpus, top_k)
+        rrf_scores = {}
+        for rank, (doc_id, _) in enumerate(bm25_results, start=1):
+            rrf_scores[doc_id] = rrf_scores.get(doc_id, 0.0) + 1.0 / (self.k + rank)
+        for rank, (doc_id, _) in enumerate(dense_results, start=1):
+            rrf_scores[doc_id] = rrf_scores.get(doc_id, 0.0) + 1.0 / (self.k + rank)
+        sorted_results = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)
+        return sorted_results[:top_k]
