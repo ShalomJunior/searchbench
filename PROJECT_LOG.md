@@ -6,7 +6,7 @@ At its core, Information Retrieval (IR) is the science of bridging the gap betwe
 
 **Query**: The explicit, often imperfect, expression of a user's information need.
 
-**Document**: The fundamental unit of information I am searching through—whether that is a Wikipedia article, a legal contract, or a single parsed paragraph.
+**Document**: The fundamental unit of information I am searching through; whether that is a Wikipedia article, a legal contract, or a single parsed paragraph.
 
 **Relevance**: The ultimate metric of success. It defines how accurately a retrieved document satisfies the true intent behind the query.
 
@@ -532,3 +532,52 @@ This bottleneck manifests spectacularly when dealing with subtle linguistic nuan
 Because both the query and Document A share almost all the core semantic keywords ("drugs", "increase", "blood pressure"), their Bi-encoder vectors will sit very close to each other in the embedding space. The Bi-encoder will almost certainly retrieve Document A and fail to properly weigh the single negation token _"not"_.
 
 A Cross-encoder, however, aligns the token _"not"_ in the query directly with _"increases"_ in Document A. The self-attention mechanism detects the logical contradiction and penalizes it heavily across every attention head, ensuring Document B is ranked first. This is exactly why the reranking stage is mandatory for high-precision search.
+
+## 17. End-to-End Architecture Benchmark
+
+To definitively prove the value of the cross-encoder step (and observe its computational cost), I ran an end-to-end benchmark on SciFact comparing all four stages of our architecture side-by-side.
+
+- **Dataset:** SciFact (300 queries)
+- **First-Stage Models:** BM25 (Lexical) + BGE-Small (Semantic)
+- **Fusion:** Reciprocal Rank Fusion ($k=60$)
+- **Second-Stage Reranker:** `cross-encoder/ms-marco-MiniLM-L-6-v2` (Top 100 candidates)
+
+### Results
+
+| System Architecture      | NDCG@10    | MRR@10     | Latency (ms)   |
+| ------------------------ | ---------- | ---------- | -------------- |
+| 1. BM25                  | 0.5379     | 0.5105     | 289.16         |
+| 2. Dense (BGE)           | 0.7200     | 0.6845     | 44.33          |
+| 3. Hybrid (RRF)          | 0.6641     | 0.6234     | 274.37         |
+| **4. Hybrid + Reranker** | **0.6888** | **0.6618** | **9297.47 🔴** |
+
+### Key Observations
+
+1. **The Reranker Works:** The Cross-Encoder successfully improved our Hybrid baseline from `0.6641` to `0.6888` NDCG.
+2. **The "Modern Model" Anomaly:** Interestingly, our pure Dense baseline (BGE-Small) scored `0.7200`, beating the Cross-Encoder. This is an artifact of model generations: BGE-Small is a state-of-the-art model from late 2023, while our Cross-Encoder is a tiny legacy model from 2021. If we used a modern Cross-Encoder (like `bge-reranker-base`), it would crush the Bi-encoder, but it would take an hour to run on a CPU.
+3. **The Latency Nightmare:** The Cross-Encoder took **~9.3 seconds** per query! This is completely unacceptable for production. Passing 100 documents to a Cross-Encoder without a GPU is a massive computational bottleneck. This proves exactly why we need to aggressively tune the _Reranking Depth_ to find the perfect Quality vs. Latency trade-off.
+
+## 18. Reranking Depth Latency Experiment
+
+To solve the latency nightmare of the Cross-Encoder, I ran a strict Quality vs. Latency tradeoff experiment. The objective was to determine the optimal number of candidates (depth) the first stage should pass to the second stage.
+
+- **Dataset:** SciFact (Full 300 queries)
+- **First Stage:** RRF Hybrid Engine
+- **Second Stage:** `cross-encoder/ms-marco-MiniLM-L-6-v2`
+
+### Results
+
+| Rerank Depth | NDCG@10    | Latency (ms)   |
+| ------------ | ---------- | -------------- |
+| Top 10       | 0.6931     | 1415.15 ms     |
+| **Top 25**   | **0.6975** | **2712.27 ms** |
+| Top 50       | 0.6934     | 4232.92 ms     |
+| Top 100      | 0.6888     | 7701.77 ms     |
+| Top 200      | 0.6850     | 20446.80 ms    |
+
+### Key Observations
+
+1. **The Sweet Spot is Top 25:** Counter-intuitively, feeding _more_ documents to the reranker does not necessarily improve the final Top 10 quality. The absolute peak NDCG (0.6975) was achieved by only reranking the Top 25 candidates.
+2. **Quality Degradation at Depth:** Notice how NDCG strictly _drops_ from Top 25 down to Top 200. This is because our Cross-Encoder (trained on MS MARCO) does not perfectly generalize to SciFact's highly specific medical vocabulary. The deeper it searches into the candidate pool, the more likely it is to confidently promote a bad document to the top positions, ruining the excellent baseline ranking that BGE-Small already provided.
+3. **Linear Latency Explosion:** The latency scales perfectly linearly with depth. Re-ranking 200 documents on a CPU takes a catastrophic **20.4 seconds** per query.
+4. **Engineering Conclusion:** In a production CPU environment with these specific models, the first-stage engine should only retrieve `top_k=25` documents for the Cross-Encoder. This cuts latency by 3x compared to Top 100, while actually _improving_ search quality.
