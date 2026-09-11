@@ -1,0 +1,83 @@
+import os
+import sys
+import time
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.bm25 import BM25Engine
+from src.dense import DenseEngine
+from src.hybrid import RRFHybridEngine
+from src.reranker import CrossEncoderReRanker
+from src.evaluation.metrics import ndcg_at_k, mrr
+from src.evaluation.data import load_beir_dataset, format_beir_corpus
+
+def evaluate_pipeline(name: str, queries: dict, qrels: dict, search_func) -> None:
+    ndcg_list = []
+    mrr_list = []
+    total_latency = 0.0
+    valid_queries = 0
+
+    for q_id, query in queries.items():
+        if q_id not in qrels:
+            continue
+            
+        scores = qrels[q_id]
+        relevant_ids = [doc_id for doc_id, score in scores.items() if score > 0]
+        
+        start_time = time.perf_counter()
+        results = search_func(query)
+        total_latency += (time.perf_counter() - start_time)
+        
+        retrieved_ids = [doc_id for doc_id, _ in results]
+        
+        ndcg_list.append(ndcg_at_k(retrieved_ids, scores, k=10))
+        mrr_list.append(mrr(retrieved_ids, relevant_ids))
+        valid_queries += 1
+
+    avg_ndcg = sum(ndcg_list) / len(ndcg_list) if ndcg_list else 0.0
+    avg_mrr = sum(mrr_list) / len(mrr_list) if mrr_list else 0.0
+    avg_latency_ms = (total_latency / valid_queries) * 1000 if valid_queries else 0.0
+
+    print(f"{name:<25} | {avg_ndcg:<10.4f} | {avg_mrr:<10.4f} | {avg_latency_ms:<12.2f}")
+
+def main() -> None:
+    print("=== Multi-Stage Architecture Benchmark ===")
+    
+    beir_corpus, queries, qrels = load_beir_dataset("scifact")
+    flat_corpus = format_beir_corpus(beir_corpus)
+
+    print("\nLoading models and building indices (this may take a few minutes)...")
+    bm25 = BM25Engine()
+    bm25.fit(flat_corpus)
+
+    # We use BGE for the dense baseline to push maximum quality
+    dense = DenseEngine(model_name="BAAI/bge-small-en-v1.5")
+    dense.fit(flat_corpus)
+    
+    # We use our existing RRFHybridEngine instead of HybridRetriever
+    hybrid = RRFHybridEngine(bm25_engine=bm25, dense_engine=dense, k=60)
+    reranker = CrossEncoderReRanker()
+
+    print(f"\n{'System Architecture':<25} | {'NDCG@10':<10} | {'MRR@10':<10} | {'Latency (ms)':<12}")
+    print("-" * 65)
+
+    # 1. BM25 Baseline
+    evaluate_pipeline("1. BM25", queries, qrels, lambda q: bm25.search(q, flat_corpus, top_k=10))
+
+    # 2. Dense Baseline
+    evaluate_pipeline("2. Dense (BGE)", queries, qrels, lambda q: dense.search(q, flat_corpus, top_k=10))
+
+    # 3. Hybrid (First-Stage)
+    evaluate_pipeline("3. Hybrid (RRF)", queries, qrels, lambda q: hybrid.search(q, flat_corpus, top_k=10))
+
+    # 4. Hybrid + Cross-Encoder
+    def hybrid_plus_reranker(q):
+        # Fetch top 100 candidates rapidly
+        candidates = hybrid.search(q, flat_corpus, top_k=100)
+        # Rerank to get the definitive top 10
+        return reranker.rerank(q, candidates, flat_corpus, top_k=10)
+
+    evaluate_pipeline("4. Hybrid + Reranker", queries, qrels, hybrid_plus_reranker)
+
+if __name__ == "__main__":
+    main()
