@@ -3,13 +3,14 @@ import matplotlib.pyplot as plt
 import os
 
 def main():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results")
     csv_path = os.path.join(base_dir, "rrf_results.csv")
-    plot_path = os.path.join(base_dir, "rrf_plot.png")
-
+    
     if not os.path.exists(csv_path):
-        print(f"File not found: {csv_path}")
+        print(f"Error: Could not find {csv_path}. Please run benchmark_rrf_sensitivity.py first.")
         return
+        
+    plot_path = os.path.join(base_dir, "rrf_plot.png")
 
     # Read the data
     df = pd.read_csv(csv_path)

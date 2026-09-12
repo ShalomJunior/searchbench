@@ -59,7 +59,7 @@ def main() -> None:
         results_data.append([k, avg_ndcg, avg_mrr, avg_recall])
 
     # 3. Export to CSV for plotting
-    csv_path = os.path.join(os.path.dirname(__file__), "rrf_results.csv")
+    csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results", "rrf_results.csv")
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["k", "NDCG@10", "MRR@10", "Recall@100"])

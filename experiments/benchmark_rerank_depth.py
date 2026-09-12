@@ -66,7 +66,7 @@ def main() -> None:
         results_data.append([depth, avg_ndcg, avg_latency_ms])
 
     # Export to CSV for plotting
-    csv_path = os.path.join(os.path.dirname(__file__), "rerank_depth_results.csv")
+    csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results", "rerank_depth_results.csv")
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Rerank_Depth", "NDCG@10", "Latency_ms"])

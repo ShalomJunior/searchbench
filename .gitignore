@@ -63,6 +63,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Outputs and Artifacts
+results/
+
 # Project-specific ignores
 data/
 *.csv
