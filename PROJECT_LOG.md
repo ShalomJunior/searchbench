@@ -683,3 +683,28 @@ Documents that are actually relevant or partially informative, but are _unlabele
 - **Random Negative:** _"Photosynthesis rates in temperate forest canopies."_ (Trivial to reject).
 - **Hard Negative:** _"Drug X causes acute renal failure in rodent trials."_ (Topical overlap, but factually non-relevant to cardiovascular effects. High learning signal).
 - **False Negative:** _"Drug X demonstrates significant cardiac protection."_ (A true match that the annotators missed. Penalizing this will hurt the model).
+
+---
+
+## 22. Ranking Loss Functions & InfoNCE
+
+Historically, early search models were trained using pointwise loss (like Mean Squared Error or standard Binary Cross-Entropy), looking at one document at a time. Today, the industry standard for learning to rank in dense retrieval and re-ranking is Contrastive Learning, specifically using the **InfoNCE** (Information Noise-Contrastive Estimation) loss.
+
+### 1. The Core Concept
+
+Instead of teaching the model an absolute metric like "score the positive document as 1.0 and the negative as 0.0", InfoNCE teaches the model a relative metric: _"Make the score of the positive document significantly higher than the scores of all the negative documents in this specific batch."_ It effectively frames ranking as a multiple-choice classification problem.
+
+### 2. The Mathematical Formulation
+
+Given a query $q$, a positive document $d^+$, and a set of $N$ negative documents $\{d^-_1, d^-_2, \dots, d^-_N\}$, the loss is defined as:
+
+$$ \mathcal{L}_{InfoNCE} = -\log \frac{\exp(S(q, d^+) / \tau)}{\exp(S(q, d^+) / \tau) + \sum_{i=1}^N \exp(S(q, d^-\_i) / \tau)} $$
+
+- $S(q,d)$ is the predicted relevance score from my Cross-Encoder.
+- $\tau$ (tau) is the temperature hyperparameter. It controls the sharpness of the distribution and dictates how severely the model penalizes the hardest negatives.
+
+If we look closely at the equation, it is mathematically identical to the standard Softmax Cross-Entropy loss formula used in multi-class classification!
+
+### 3. PyTorch Implementation
+
+Because InfoNCE is mathematically equivalent to Cross-Entropy, it is incredibly clean to implement using standard Deep Learning frameworks. I wrote a custom `infonce_loss` PyTorch function and placed it in `src/training/loss.py`. This sets the architectural foundation for the upcoming training loop.
