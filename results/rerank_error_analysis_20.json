@@ -1,0 +1,404 @@
+[
+  {
+    "query_id": "70",
+    "query": "Activation of PPM1D suppresses p53 function.",
+    "ndcg_delta": -1.0,
+    "ndcg_before": 1.0,
+    "ndcg_after": 0.0,
+    "relevant_docs": [
+      "5956380",
+      "4414547"
+    ],
+    "before_top3": [
+      "5956380",
+      "4414547",
+      "5254463"
+    ],
+    "after_top3": [
+      "21307488",
+      "6896063",
+      "31624828"
+    ]
+  },
+  {
+    "query_id": "1150",
+    "query": "Tetraspanin-3 is a causative factor in the development of acute myelogenous leukemia",
+    "ndcg_delta": 0.7109351736821121,
+    "ndcg_before": 0.2890648263178879,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "11369420"
+    ],
+    "before_top3": [
+      "5765455",
+      "8427306",
+      "9478135"
+    ],
+    "after_top3": [
+      "11369420",
+      "12903921",
+      "9478135"
+    ]
+  },
+  {
+    "query_id": "1241",
+    "query": "The myocardial lineage develops from cardiac progenitors of mesodermal origin.",
+    "ndcg_delta": 0.6989700043360187,
+    "ndcg_before": 0.3010299956639812,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "4427392"
+    ],
+    "before_top3": [
+      "2828460",
+      "6148876",
+      "2973910"
+    ],
+    "after_top3": [
+      "4427392",
+      "6148876",
+      "12411274"
+    ]
+  },
+  {
+    "query_id": "75",
+    "query": "Active H. pylori urease has a polymeric structure that compromises two subunits, UreA and UreB.",
+    "ndcg_delta": 0.6845351232142712,
+    "ndcg_before": 0.31546487678572877,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "4387784"
+    ],
+    "before_top3": [
+      "13965483",
+      "37768883",
+      "2837758"
+    ],
+    "after_top3": [
+      "4387784",
+      "37768883",
+      "13965483"
+    ]
+  },
+  {
+    "query_id": "1382",
+    "query": "aPKCz causes tumour enhancement by affecting glutamine metabolism.",
+    "ndcg_delta": 0.6845351232142712,
+    "ndcg_before": 0.31546487678572877,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "17755060"
+    ],
+    "before_top3": [
+      "3831884",
+      "1344498",
+      "5256564"
+    ],
+    "after_top3": [
+      "17755060",
+      "3831884",
+      "28334217"
+    ]
+  },
+  {
+    "query_id": "598",
+    "query": "Incidence rates of cervical cancer have increased due to nationwide screening programs based primarily on cytology to detect uterine cervical cancer.",
+    "ndcg_delta": -0.6666666666666667,
+    "ndcg_before": 1.0,
+    "ndcg_after": 0.3333333333333333,
+    "relevant_docs": [
+      "25742130"
+    ],
+    "before_top3": [
+      "25742130",
+      "46695481",
+      "27446873"
+    ],
+    "after_top3": [
+      "46695481",
+      "27446873",
+      "36355784"
+    ]
+  },
+  {
+    "query_id": "659",
+    "query": "Ivermectin is used to treat lymphatic filariasis.",
+    "ndcg_delta": -0.6666666666666667,
+    "ndcg_before": 1.0,
+    "ndcg_after": 0.3333333333333333,
+    "relevant_docs": [
+      "1215116"
+    ],
+    "before_top3": [
+      "1215116",
+      "17327939",
+      "34481589"
+    ],
+    "after_top3": [
+      "46765242",
+      "13070316",
+      "21258863"
+    ]
+  },
+  {
+    "query_id": "94",
+    "query": "Albendazole is used to treat lymphatic filariasis.",
+    "ndcg_delta": -0.6437928128919779,
+    "ndcg_before": 1.0,
+    "ndcg_after": 0.3562071871080222,
+    "relevant_docs": [
+      "1215116"
+    ],
+    "before_top3": [
+      "1215116",
+      "17327939",
+      "46926352"
+    ],
+    "after_top3": [
+      "27264454",
+      "17327939",
+      "46765242"
+    ]
+  },
+  {
+    "query_id": "674",
+    "query": "LDL cholesterol has no involvement in the development of cardiovascular disease.",
+    "ndcg_delta": 0.6437928128919779,
+    "ndcg_before": 0.3562071871080222,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "2095573"
+    ],
+    "before_top3": [
+      "15360986",
+      "9814332",
+      "30981192"
+    ],
+    "after_top3": [
+      "2095573",
+      "30981192",
+      "7757997"
+    ]
+  },
+  {
+    "query_id": "1137",
+    "query": "TNFAIP3 is a tumor suppressor in glioblastoma.",
+    "ndcg_delta": 0.6437928128919779,
+    "ndcg_before": 0.3562071871080222,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "33370"
+    ],
+    "before_top3": [
+      "41293601",
+      "9486930",
+      "13244602"
+    ],
+    "after_top3": [
+      "33370",
+      "470625",
+      "5123516"
+    ]
+  },
+  {
+    "query_id": "1368",
+    "query": "Vitamin D deficiency effects the term of delivery.",
+    "ndcg_delta": 0.6437928128919779,
+    "ndcg_before": 0.3562071871080222,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "2425364"
+    ],
+    "before_top3": [
+      "23267371",
+      "13312471",
+      "21553394"
+    ],
+    "after_top3": [
+      "2425364",
+      "8856690",
+      "23267371"
+    ]
+  },
+  {
+    "query_id": "993",
+    "query": "Pyridostatin destabilizes the G - quadruplex in the telomeric region.",
+    "ndcg_delta": 0.6131471927654584,
+    "ndcg_before": 0.38685280723454163,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "16472469"
+    ],
+    "before_top3": [
+      "25842866",
+      "26607366",
+      "4411655"
+    ],
+    "after_top3": [
+      "16472469",
+      "26118532",
+      "25842866"
+    ]
+  },
+  {
+    "query_id": "1088",
+    "query": "Silencing of Bcl2 is important for the maintenance and progression of tumors.",
+    "ndcg_delta": 0.6131471927654584,
+    "ndcg_before": 0.38685280723454163,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "37549932"
+    ],
+    "before_top3": [
+      "35443524",
+      "14863011",
+      "381602"
+    ],
+    "after_top3": [
+      "37549932",
+      "33638477",
+      "11900630"
+    ]
+  },
+  {
+    "query_id": "1132",
+    "query": "TCR/CD3 microdomains are a required to induce the immunologic synapse to activate T cells.",
+    "ndcg_delta": 0.6131471927654584,
+    "ndcg_before": 0.0,
+    "ndcg_after": 0.6131471927654584,
+    "relevant_docs": [
+      "33499189",
+      "9283422"
+    ],
+    "before_top3": [
+      "18834078",
+      "6936141",
+      "15972906"
+    ],
+    "after_top3": [
+      "33499189",
+      "6936141",
+      "2714623"
+    ]
+  },
+  {
+    "query_id": "1180",
+    "query": "The PRR MDA5 is a sensor of RNA virus infection.",
+    "ndcg_delta": 0.6131471927654584,
+    "ndcg_before": 0.38685280723454163,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "31272411"
+    ],
+    "before_top3": [
+      "44366096",
+      "16058322",
+      "10627801"
+    ],
+    "after_top3": [
+      "31272411",
+      "44366096",
+      "10627801"
+    ]
+  },
+  {
+    "query_id": "1395",
+    "query": "p16INK4A accumulation is  linked to an abnormal wound response caused by the microinvasive step of advanced Oral Potentially Malignant Lesions (OPMLs).",
+    "ndcg_delta": 0.6131471927654584,
+    "ndcg_before": 0.38685280723454163,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "17717391"
+    ],
+    "before_top3": [
+      "19343151",
+      "10698739",
+      "15335331"
+    ],
+    "after_top3": [
+      "17717391",
+      "19343151",
+      "36399107"
+    ]
+  },
+  {
+    "query_id": "294",
+    "query": "Crossover hot spots are not found within gene promoters in Saccharomyces cerevisiae.",
+    "ndcg_delta": 0.5693234419266069,
+    "ndcg_before": 0.43067655807339306,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "10874408"
+    ],
+    "before_top3": [
+      "21170174",
+      "365896",
+      "16237005"
+    ],
+    "after_top3": [
+      "10874408",
+      "17240457",
+      "25462689"
+    ]
+  },
+  {
+    "query_id": "295",
+    "query": "Crosstalk between dendritic cells (DCs) and innate lymphoid cells (ILCs) is important in the regulation of intestinal homeostasis.",
+    "ndcg_delta": 0.5693234419266069,
+    "ndcg_before": 0.43067655807339306,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "20310709"
+    ],
+    "before_top3": [
+      "1022115",
+      "24044977",
+      "22791348"
+    ],
+    "after_top3": [
+      "20310709",
+      "5979056",
+      "12631182"
+    ]
+  },
+  {
+    "query_id": "501",
+    "query": "Headaches are not correlated with cognitive impairment.",
+    "ndcg_delta": 0.5693234419266069,
+    "ndcg_before": 0.43067655807339306,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "17930286"
+    ],
+    "before_top3": [
+      "21274919",
+      "32463364",
+      "24285403"
+    ],
+    "after_top3": [
+      "17930286",
+      "24865781",
+      "21274919"
+    ]
+  },
+  {
+    "query_id": "575",
+    "query": "In domesticated populations of Saccharomyces cerevisiae, whole chromosome aneuploidy is very uncommon.",
+    "ndcg_delta": 0.5693234419266069,
+    "ndcg_before": 0.43067655807339306,
+    "ndcg_after": 1.0,
+    "relevant_docs": [
+      "10300888"
+    ],
+    "before_top3": [
+      "16686383",
+      "8250852",
+      "27274441"
+    ],
+    "after_top3": [
+      "10300888",
+      "9704467",
+      "1631583"
+    ]
+  }
+]
