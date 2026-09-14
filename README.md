@@ -24,12 +24,13 @@ SearchBench was evaluated on the **BEIR SciFact dataset** (5,183 scientific docu
 
 The integration of semantic models significantly outperforms classical text search:
 
-| System Architecture       | NDCG@10 | MRR@10 | Latency (GPU T4) |
-| ------------------------- | ------- | ------ | ---------------- |
-| 1. BM25 Baseline          | 0.5379  | 0.5105 | 257 ms           |
-| 2. Dense Baseline (BGE)   | 0.7200  | 0.6845 | **11 ms**        |
-| 3. Hybrid Fusion (RRF)    | 0.6641  | 0.6234 | 296 ms           |
-| **4. Hybrid + Re-ranker** | 0.6888  | 0.6618 | 808 ms           |
+| System Architecture         | NDCG@10    | MRR@10     | Latency (GPU T4) |
+| --------------------------- | ---------- | ---------- | ---------------- |
+| 1. BM25 Baseline            | 0.5379     | 0.5105     | 257 ms           |
+| 2. Dense Baseline (BGE)     | 0.7200     | 0.6845     | **11 ms**        |
+| 3. Hybrid Fusion (RRF)      | 0.6641     | 0.6234     | 296 ms           |
+| 4. Hybrid + Base Reranker   | 0.6888     | 0.6618     | 787 ms           |
+| **5. Hybrid + FT Reranker** | **0.7303** | **0.7030** | 783 ms           |
 
 ### 2. The Hardware Acceleration Delta (CPU vs GPU)
 
