@@ -25,6 +25,7 @@ def main() -> None:
     dense = DenseEngine(model_name="BAAI/bge-small-en-v1.5")
     dense.fit(flat_corpus)
     
+    # Fusion Engine
     hybrid = RRFHybridEngine(bm25_engine=bm25, dense_engine=dense, k=60)
     reranker = CrossEncoderReRanker()
 
@@ -66,7 +67,9 @@ def main() -> None:
         results_data.append([depth, avg_ndcg, avg_latency_ms])
 
     # Export to CSV for plotting
-    csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results", "rerank_depth_results.csv")
+    results_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results")
+    os.makedirs(results_dir, exist_ok=True)
+    csv_path = os.path.join(results_dir, "rerank_depth_results.csv")
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Rerank_Depth", "NDCG@10", "Latency_ms"])

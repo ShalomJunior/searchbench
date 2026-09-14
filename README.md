@@ -14,32 +14,36 @@ The system implements a state-of-the-art **Retrieve & Re-rank** architecture:
 2. **Second-Stage Re-ranking (High Precision):**
    - **Cross-Encoder:** Uses `cross-encoder/ms-marco-MiniLM-L-6-v2` to perform deep token-level cross-attention on the top candidates, resolving complex semantic nuances (like negations) that bi-encoders miss.
 
-*(See [docs/architecture.md](docs/architecture.md) for a detailed breakdown and system diagram).*
+_(See [docs/architecture.md](docs/architecture.md) for a detailed breakdown and system diagram)._
 
 ## 📊 Key Findings
 
-SearchBench was evaluated on the **BEIR SciFact dataset** (5,183 scientific documents, 300 complex queries). 
+SearchBench was evaluated on the **BEIR SciFact dataset** (5,183 scientific documents, 300 complex queries).
 
 ### 1. Multi-Stage Performance
+
 The integration of semantic models significantly outperforms classical text search:
 
-| System Architecture | NDCG@10 | MRR@10 |
-| --- | --- | --- |
-| 1. BM25 Baseline | 0.5379 | 0.5105 |
-| 2. Dense Baseline (BGE) | 0.7200 | 0.6845 |
-| 3. Hybrid Fusion (RRF) | 0.6641 | 0.6234 |
-| **4. Hybrid + Re-ranker** | **0.6975** | **0.6720** |
+| System Architecture       | NDCG@10 | MRR@10 | Latency (GPU T4) |
+| ------------------------- | ------- | ------ | ---------------- |
+| 1. BM25 Baseline          | 0.5379  | 0.5105 | 257 ms           |
+| 2. Dense Baseline (BGE)   | 0.7200  | 0.6845 | **11 ms**        |
+| 3. Hybrid Fusion (RRF)    | 0.6641  | 0.6234 | 296 ms           |
+| **4. Hybrid + Re-ranker** | 0.6888  | 0.6618 | 808 ms           |
 
-### 2. The Re-ranking "Sweet Spot"
-A major engineering challenge in neural search is the latency of Cross-Encoders. Our rigorous depth benchmarking revealed a critical **Quality vs. Latency tradeoff**:
-- Reranking the **Top 100** candidates took **~11 seconds** per query on CPU, and actually *degraded* the NDCG due to out-of-domain vocabulary hallucination.
-- The absolute optimal sweet spot is reranking exactly the **Top 25** candidates, yielding the maximum NDCG (0.6975) while maintaining an acceptable CPU latency (~2.7 seconds).
+### 2. The Hardware Acceleration Delta (CPU vs GPU)
 
-*(See [PROJECT_LOG.md](PROJECT_LOG.md) for the complete 4-week engineering diary, deep-dive metric analyses, and qualitative error reports).*
+A major engineering challenge in neural search is the latency of Cross-Encoders. My rigorous depth benchmarking revealed massive hardware acceleration gains when moving from Local CPU to Cloud GPUs:
+
+- Reranking the **Top 100** candidates took **~11,000 ms** per query on CPU.
+- On a Kaggle T4 GPU, the exact same Top 100 reranking took only **808 ms** (a ~13.5x speedup), making deep semantic re-ranking viable for production.
+
+_(See [PROJECT_LOG.md](PROJECT_LOG.md) for the complete engineering diary, deep-dive metric analyses, and qualitative error reports)._
 
 ## 🚀 Quickstart
 
 ### Installation
+
 Clone the repository and install the required dependencies (Python 3.10+ recommended):
 
 ```bash
@@ -49,18 +53,22 @@ pip install -r requirements.txt
 ```
 
 ### Running the Benchmarks
+
 All experiments are localized in the `experiments/` directory. Resulting artifacts (CSVs, JSONs, plots) will be generated in the `results/` folder.
 
 To reproduce the end-to-end multi-stage pipeline evaluation:
+
 ```bash
 python experiments/benchmark_multistage.py
 ```
 
 To reproduce the optimal reranking depth analysis:
+
 ```bash
 python experiments/benchmark_rerank_depth.py
 ```
 
 ## 📖 Documentation
+
 - **[Project Log](PROJECT_LOG.md):** The comprehensive chronological diary of the project's evolution, design choices, and metric analyses.
 - **[Architecture](docs/architecture.md):** The system design overview.

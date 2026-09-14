@@ -183,18 +183,18 @@ Dense Retrieval fundamentally solves this by mapping text into a mathematical sp
 
 ### Sentence Embeddings & Bi-Encoders
 
-Instead of counting words, we pass our text through a Transformer neural network (like BERT or MiniLM). The network reads the entire string, understands the context, and outputs a single **dense vector** (an array of e.g., 384 floating-point numbers).
+Instead of counting words, I pass my text through a Transformer neural network (like BERT or MiniLM). The network reads the entire string, understands the context, and outputs a single **dense vector** (an array of e.g., 384 floating-point numbers).
 
 In a **Bi-Encoder** architecture, the query and the document are processed completely independently of each other.
-This independent processing is the architectural secret that makes semantic search possible at scale: we can pre-compute the embeddings for all 5,000 (or 5 million) documents _offline_ and cache them in memory. At search time, we only have to run the neural network once for the user's query.
+This independent processing is the architectural secret that makes semantic search possible at scale: I can pre-compute the embeddings for all 5,000 (or 5 million) documents _offline_ and cache them in memory. At search time, I only have to run the neural network once for the user's query.
 
 ### Cosine Similarity
 
-Once the query and documents are transformed into vectors in the same 384-dimensional space, we can measure how closely related they are by calculating the angle between them using **Cosine Similarity**:
+Once the query and documents are transformed into vectors in the same 384-dimensional space, I can measure how closely related they are by calculating the angle between them using **Cosine Similarity**:
 
 $$\text{Cosine Similarity} = \frac{\mathbf{q} \cdot \mathbf{d}}{\Vert{}\mathbf{q}\Vert{} \Vert{}\mathbf{d}\Vert{}}$$
 
-If we $L_2$-normalize the vectors beforehand, their magnitudes ($\Vert{}\mathbf{q}\Vert{}$ and $\Vert{}\mathbf{d}\Vert{}$) become $1$. This mathematically simplifies the cosine similarity down to a blazing-fast **Inner Product** (Dot Product):
+If I $L_2$-normalize the vectors beforehand, their magnitudes ($\Vert{}\mathbf{q}\Vert{}$ and $\Vert{}\mathbf{d}\Vert{}$) become $1$. This mathematically simplifies the cosine similarity down to a blazing-fast **Inner Product** (Dot Product):
 
 $$\text{Inner Product} = \mathbf{q} \cdot \mathbf{d} = \sum_{i=1}^{n} q_i d_i$$
 
@@ -202,13 +202,13 @@ $$\text{Inner Product} = \mathbf{q} \cdot \mathbf{d} = \sum_{i=1}^{n} q_i d_i$$
 
 Even with the math simplified to a dot product, calculating the distance between the query vector and _every single document vector in a 100-million document corpus_ at query time is computationally impossible.
 
-We solve this using **Approximate Nearest Neighbors (ANN)** libraries like Facebook AI Similarity Search (**FAISS**). FAISS organizes the high-dimensional space into clusters (like Voronoi cells). Instead of comparing the query to every document, FAISS figures out which cluster the query vector lands in, and only computes the dot product against the documents inside that specific neighborhood, bringing the search time down from $O(N)$ to $O(\log N)$.
+I solve this using **Approximate Nearest Neighbors (ANN)** libraries like Facebook AI Similarity Search (**FAISS**). FAISS organizes the high-dimensional space into clusters (like Voronoi cells). Instead of comparing the query to every document, FAISS figures out which cluster the query vector lands in, and only computes the dot product against the documents inside that specific neighborhood, bringing the search time down from $O(N)$ to $O(\log N)$.
 
 ## 7. The Theory of Approximate Nearest Neighbors (ANN)
 
 Dense retrieval calculates the Cosine Similarity (Inner Product) between a query vector and document vectors. However, comparing a single query vector against 100 million document vectors at query time (Exact Search) is computationally impossible for a low-latency web application.
 
-This introduces the need for **Approximate Nearest Neighbors (ANN)**, where we intentionally sacrifice a tiny fraction of Recall (accuracy) to gain a massive speedup in Latency.
+This introduces the need for **Approximate Nearest Neighbors (ANN)**, where I intentionally sacrifice a tiny fraction of Recall (accuracy) to gain a massive speedup in Latency.
 
 ### Exact Search vs. Approximate Search
 
@@ -274,7 +274,7 @@ The goal of this experiment is to establish a semantic search baseline using a n
 
 ## 9. Error Analysis: BM25 vs Dense Retrieval
 
-To truly understand our search system, we must understand its failure modes. I wrote a script to run both engines side-by-side on the 300 queries, calculate their individual NDCG scores, and categorize their contrasting performance.
+To truly understand my search system, I must understand its failure modes. I wrote a script to run both engines side-by-side on the 300 queries, calculate their individual NDCG scores, and categorize their contrasting performance.
 
 Out of 300 queries, the script found:
 
@@ -320,7 +320,7 @@ Before building a hybrid engine, I benchmarked three different embedding models 
 
 ## 11. The Lexical vs. Semantic Divide (Hybrid Architecture)
 
-Before writing the fusion algorithms for a Hybrid Search engine, we must understand exactly _why_ combining two distinct systems is the industry standard for production search architecture. Users search in fundamentally different ways depending on their intent, and each engine is blind to the other's strengths.
+Before writing the fusion algorithms for a Hybrid Search engine, I must understand exactly _why_ combining two distinct systems is the industry standard for production search architecture. Users search in fundamentally different ways depending on their intent, and each engine is blind to the other's strengths.
 
 ### 1. BM25 (Exact Lexical Matching)
 
@@ -340,17 +340,17 @@ Dense embeddings excel at conceptual understanding, synonym mapping, and bridgin
 
 ### The Hybrid Solution
 
-By running both engines in parallel and mathematically fusing their ranked lists (a process known as Reciprocal Rank Fusion), we create a robust safety net. **BM25 anchors the search to specific entities, while the Dense engine expands the search to capture conceptual intent.**
+By running both engines in parallel and mathematically fusing their ranked lists (a process known as Reciprocal Rank Fusion), I create a robust safety net. **BM25 anchors the search to specific entities, while the Dense engine expands the search to capture conceptual intent.**
 
 ## 12. Hybrid Search: Simple Score Fusion
 
-To fuse the two engines together, we must solve a fundamental mathematical problem: **Scale mismatch**. BM25 scores are unbounded (often ranging from 0 to 50+), while Dense scores (Cosine Similarity) are strictly bounded between -1.0 and 1.0.
+To fuse the two engines together, I must solve a fundamental mathematical problem: **Scale mismatch**. BM25 scores are unbounded (often ranging from 0 to 50+), while Dense scores (Cosine Similarity) are strictly bounded between -1.0 and 1.0.
 
-If we simply add them together, BM25 will completely overpower the Dense engine.
+If I simply add them together, BM25 will completely overpower the Dense engine.
 
 ### The Solution: Min-Max Normalization
 
-Before combining the lists, we force both sets of scores onto a strict `[0.0, 1.0]` scale using Min-Max normalization. Once normalized, we use a tuning weight ($\alpha$) to create a **Convex Combination**:
+Before combining the lists, I force both sets of scores onto a strict `[0.0, 1.0]` scale using Min-Max normalization. Once normalized, I use a tuning weight ($\alpha$) to create a **Convex Combination**:
 
 $$\text{Final Score} = \alpha \cdot \text{BM25}_{\text{norm}} + (1 - \alpha) \cdot \text{Dense}_{\text{norm}}$$
 
@@ -368,9 +368,9 @@ I ran a grid search over the SciFact dataset to see how the tuning parameter ($\
 
 ### Key Takeaways
 
-1. **The Architecture Works!** The Hybrid approach (`Alpha = 0.25`) significantly outperformed both pure BM25 (`0.5379`) and pure Dense (`0.6451`), pushing our NDCG@10 to a new peak of **0.6750**.
+1. **The Architecture Works!** The Hybrid approach (`Alpha = 0.25`) significantly outperformed both pure BM25 (`0.5379`) and pure Dense (`0.6451`), pushing my NDCG@10 to a new peak of **0.6750**.
 2. **SciFact is Semantic-Heavy**: Because scientific claims require deep contextual understanding rather than just keyword matching, the optimal fusion heavily favors the Dense Engine (75% Dense / 25% BM25).
-3. **The Power of Synergy**: By combining the exact entity matching of BM25 with the conceptual understanding of Dense Embeddings, we achieved the highest Recall (`0.9383`) the system has ever seen.
+3. **The Power of Synergy**: By combining the exact entity matching of BM25 with the conceptual understanding of Dense Embeddings, I achieved the highest Recall (`0.9383`) the system has ever seen.
 
 ### Follow-up Experiment: Using a Stronger Dense Model (BGE)
 
@@ -384,7 +384,7 @@ I re-ran the exact same Alpha Sweep, but replaced the baseline `all-MiniLM-L6-v2
 | `0.75` | Lexical-Heavy Hybrid | 0.5971     | 0.5775     | 0.9400     |
 | `1.00` | 100% BM25            | 0.5379     | 0.5172     | 0.7934     |
 
-**The Takeaway**: When your Dense Model is _incredibly_ strong (BGE scored 0.7200 by itself), blending it with a weaker lexical model (BM25 scored 0.5379) can actually dilute the results. In this specific configuration, Pure Dense beat the Hybrid! This highlights why we benchmark everything—there is no "one size fits all" formula in search.
+**The Takeaway**: When your Dense Model is _incredibly_ strong (BGE scored 0.7200 by itself), blending it with a weaker lexical model (BM25 scored 0.5379) can actually dilute the results. In this specific configuration, Pure Dense beat the Hybrid! This highlights why I benchmark everything—there is no "one size fits all" formula in search.
 
 ## 13. Reciprocal Rank Fusion (RRF)
 
@@ -439,7 +439,7 @@ I ran a parameter sweep to measure exactly how this constant affects ranking qua
 
 ### Results (Using MiniLM)
 
-![RRF Parameter Sensitivity](experiments/rrf_plot.png)
+![RRF Parameter Sensitivity](results/rrf_plot.png)
 
 | k   | NDCG@10    | MRR@10     | Recall@100 |
 | --- | ---------- | ---------- | ---------- |
@@ -462,7 +462,7 @@ I ran a parameter sweep to measure exactly how this constant affects ranking qua
 
 Before pushing a search architecture to production, it is critical to profile its latency. A search engine that returns perfect results in 5 seconds is fundamentally broken from a UX perspective. Industry standard typically aims for sub-200ms latency.
 
-I ran a precision benchmark over 300 queries on the SciFact dataset to measure the exact millisecond overhead of our unoptimized Python implementation.
+I ran a precision benchmark over 300 queries on the SciFact dataset to measure the exact millisecond overhead of my unoptimized Python implementation.
 
 ### Results (Sequential Execution)
 
@@ -476,26 +476,26 @@ I ran a precision benchmark over 300 queries on the SciFact dataset to measure t
 ### Key Observations
 
 1. **The Math is Instant**: The Reciprocal Rank Fusion overhead is just `1.40 ms`. This proves that the actual fusion algorithm is computationally "free". It adds zero meaningful latency to the pipeline.
-2. **Dense Retrieval is Blazing Fast**: Thanks to FAISS (C++ backend) and the lightweight `all-MiniLM-L6-v2` model, our dense search executes in an incredible `15.73 ms`. This proves that Approximate Nearest Neighbors (ANN) successfully solves the $O(N)$ scaling problem for semantic search.
-3. **BM25 is the Bottleneck**: Our BM25 implementation is currently running at `242.59 ms`. This is incredibly slow for a lexical engine! The reason is simple: our current Python implementation splits the document text (`.split()`) and counts terms (`.count()`) dynamically at query time rather than relying strictly on pre-computed Inverted Index frequencies. This is a massive $O(C)$ operation that scales horribly.
+2. **Dense Retrieval is Blazing Fast**: Thanks to FAISS (C++ backend) and the lightweight `all-MiniLM-L6-v2` model, my dense search executes in an incredible `15.73 ms`. This proves that Approximate Nearest Neighbors (ANN) successfully solves the $O(N)$ scaling problem for semantic search.
+3. **BM25 is the Bottleneck**: My BM25 implementation is currently running at `242.59 ms`. This is incredibly slow for a lexical engine! The reason is simple: my current Python implementation splits the document text (`.split()`) and counts terms (`.count()`) dynamically at query time rather than relying strictly on pre-computed Inverted Index frequencies. This is a massive $O(C)$ operation that scales horribly.
 
 _(Note: In a true production environment, BM25 and Dense Retrieval are executed asynchronously in parallel, meaning the theoretical total latency would be bottlenecked strictly by the slowest component: `max(BM25, Dense) + Fusion`)._
 
 ## 16. Neural Reranking: Bi-Encoders vs. Cross-Encoders
 
-I have spent the last few weeks building a candidate generation pipeline that retrieves the top 100 documents at lightning speed. However, to get the absolute best results into the top 10 positions (where users actually look), we need a heavier, more intelligent model.
+I have spent the last few weeks building a candidate generation pipeline that retrieves the top 100 documents at lightning speed. However, to get the absolute best results into the top 10 positions (where users actually look), I need a heavier, more intelligent model.
 
-Before writing any code, it is critical to understand the architectural difference between the model we have been using (Bi-encoder) and the model we are about to use (Cross-encoder).
+Before writing any code, it is critical to understand the architectural difference between the model I have been using (Bi-encoder) and the model I are about to use (Cross-encoder).
 
 ### 1. The Bi-Encoder (Candidate Generation)
 
-This is the architecture that powers our `DenseEngine`. It processes the query and the document completely independently.
+This is the architecture that powers my `DenseEngine`. It processes the query and the document completely independently.
 
 - **Architecture:**
   - `Query` $\rightarrow$ `Transformer` $\rightarrow$ `Vector A`
   - `Document` $\rightarrow$ `Transformer` $\rightarrow$ `Vector B`
   - **Score** = Cosine Similarity between `Vector A` and `Vector B`.
-- **The Advantage (Speed):** It is blazingly fast at search time. We pre-compute all document vectors offline and store them in FAISS. When a user searches, we only pass the short query through the neural network and do a fast vector distance search.
+- **The Advantage (Speed):** It is blazingly fast at search time. I pre-compute all document vectors offline and store them in FAISS. When a user searches, I only pass the short query through the neural network and do a fast vector distance search.
 - **The Flaw (Context Blindness):** Because the query and document never "see" each other inside the Transformer layers, the model cannot perform deep, token-level comparisons. For example, it struggles to determine if the word "Python" in the query refers to the snake or the programming language based on the specific context of the document.
 
 ### 2. The Cross-Encoder (Re-ranking)
@@ -509,9 +509,9 @@ This is the absolute state-of-the-art for search relevance. Instead of encoding 
 
 ### The Multi-Stage Production Solution
 
-Because Cross-encoders are too slow to run on the entire database, modern production systems use a multi-stage pipeline, the exact architecture we are building:
+Because Cross-encoders are too slow to run on the entire database, modern production systems use a multi-stage pipeline, the exact architecture I are building:
 
-1. **Stage 1 (Retrieval):** Use our fast, lightweight engines (BM25 + Bi-encoder $\rightarrow$ RRF) to rapidly filter 50,000 documents down to a candidate pool of the **Top 100**.
+1. **Stage 1 (Retrieval):** Use my fast, lightweight engines (BM25 + Bi-encoder $\rightarrow$ RRF) to rapidly filter 50,000 documents down to a candidate pool of the **Top 100**.
 2. **Stage 2 (Reranking):** Pass only those 100 candidates to the heavy Cross-encoder to accurately score and re-rank them, presenting the ultimate **Top 10** to the user.
 
 ### A Concrete Failure Case: The Vector Bottleneck and Negations
@@ -535,7 +535,7 @@ A Cross-encoder, however, aligns the token _"not"_ in the query directly with _"
 
 ## 17. End-to-End Architecture Benchmark
 
-To definitively prove the value of the cross-encoder step (and observe its computational cost), I ran an end-to-end benchmark on SciFact comparing all four stages of our architecture side-by-side.
+To definitively prove the value of the cross-encoder step (and observe its computational cost), I ran an end-to-end benchmark on SciFact comparing all four stages of my architecture side-by-side.
 
 - **Dataset:** SciFact (300 queries)
 - **First-Stage Models:** BM25 (Lexical) + BGE-Small (Semantic)
@@ -553,9 +553,9 @@ To definitively prove the value of the cross-encoder step (and observe its compu
 
 ### Key Observations
 
-1. **The Reranker Works:** The Cross-Encoder successfully improved our Hybrid baseline from `0.6641` to `0.6888` NDCG.
-2. **The "Modern Model" Anomaly:** Interestingly, our pure Dense baseline (BGE-Small) scored `0.7200`, beating the Cross-Encoder. This is an artifact of model generations: BGE-Small is a state-of-the-art model from late 2023, while our Cross-Encoder is a tiny legacy model from 2021. If we used a modern Cross-Encoder (like `bge-reranker-base`), it would crush the Bi-encoder, but it would take an hour to run on a CPU.
-3. **The Latency Nightmare:** The Cross-Encoder took **~9.3 seconds** per query! This is completely unacceptable for production. Passing 100 documents to a Cross-Encoder without a GPU is a massive computational bottleneck. This proves exactly why we need to aggressively tune the _Reranking Depth_ to find the perfect Quality vs. Latency trade-off.
+1. **The Reranker Works:** The Cross-Encoder successfully improved my Hybrid baseline from `0.6641` to `0.6888` NDCG.
+2. **The "Modern Model" Anomaly:** Interestingly, my pure Dense baseline (BGE-Small) scored `0.7200`, beating the Cross-Encoder. This is an artifact of model generations: BGE-Small is a state-of-the-art model from late 2023, while my Cross-Encoder is a tiny legacy model from 2021. If I used a modern Cross-Encoder (like `bge-reranker-base`), it would crush the Bi-encoder, but it would take an hour to run on a CPU.
+3. **The Latency Nightmare:** The Cross-Encoder took **~9.3 seconds** per query! This is completely unacceptable for production. Passing 100 documents to a Cross-Encoder without a GPU is a massive computational bottleneck. This proves exactly why I need to aggressively tune the _Reranking Depth_ to find the perfect Quality vs. Latency trade-off.
 
 ## 18. Reranking Depth Latency Experiment
 
@@ -578,6 +578,101 @@ To solve the latency nightmare of the Cross-Encoder, I ran a strict Quality vs. 
 ### Key Observations
 
 1. **The Sweet Spot is Top 25:** Counter-intuitively, feeding _more_ documents to the reranker does not necessarily improve the final Top 10 quality. The absolute peak NDCG (0.6975) was achieved by only reranking the Top 25 candidates.
-2. **Quality Degradation at Depth:** Notice how NDCG strictly _drops_ from Top 25 down to Top 200. This is because our Cross-Encoder (trained on MS MARCO) does not perfectly generalize to SciFact's highly specific medical vocabulary. The deeper it searches into the candidate pool, the more likely it is to confidently promote a bad document to the top positions, ruining the excellent baseline ranking that BGE-Small already provided.
+2. **Quality Degradation at Depth:** Notice how NDCG strictly _drops_ from Top 25 down to Top 200. This is because my Cross-Encoder (trained on MS MARCO) does not perfectly generalize to SciFact's highly specific medical vocabulary. The deeper it searches into the candidate pool, the more likely it is to confidently promote a bad document to the top positions, ruining the excellent baseline ranking that BGE-Small already provided.
 3. **Linear Latency Explosion:** The latency scales perfectly linearly with depth. Re-ranking 200 documents on a CPU takes a catastrophic **20.4 seconds** per query.
 4. **Engineering Conclusion:** In a production CPU environment with these specific models, the first-stage engine should only retrieve `top_k=25` documents for the Cross-Encoder. This cuts latency by 3x compared to Top 100, while actually _improving_ search quality.
+
+## 19. Qualitative Error Analysis
+
+Relying solely on aggregate metrics (like NDCG) hides the mechanical realities of how a model actually behaves. I performed a qualitative error analysis by isolating queries where the Cross-Encoder caused massive rank shifts compared to the Hybrid baseline.
+
+### 1. The Cross-Encoder Wins (Nuanced Intent & Negation)
+
+**Query 674:** _"LDL cholesterol has no involvement in the development of cardiovascular disease."_
+
+- **Before (Hybrid):** Failed to rank the relevant document in the Top 3. The Bi-Encoder is notoriously bad at negations and likely retrieved documents stating LDL _is_ involved.
+- **After (Cross-Encoder):** Ranked the relevant document exactly at #1 (NDCG went from 0.35 to 1.0). The Cross-Encoder correctly cross-attended the word "no" with the document text to find the contrarian view.
+
+**Query 75:** _"Active H. pylori urease has a polymeric structure that compromises two subunits, UreA and UreB."_
+
+- **After (Cross-Encoder):** Promoted the correct document to #1 (NDCG +0.68). Deep cross-attention successfully verified the relationship between "polymeric structure" and the two specific subunits.
+
+### 2. The Cross-Encoder Fails (Domain Mismatch)
+
+**Query 70:** _"Activation of PPM1D suppresses p53 function."_
+
+- **Before (Hybrid):** Ranked the two perfectly relevant documents at #1 and #2 (NDCG = 1.0).
+- **After (Cross-Encoder):** Completely ejected the relevant documents from the Top 10 (NDCG = 0.0).
+- **Why?** The Cross-Encoder (`ms-marco-MiniLM-L-6-v2`) was trained on general Bing search queries. It does not understand specific genetic acronyms (PPM1D, p53) as well as the modern BGE-Small model. When it read the text, it hallucinated that other documents were more relevant and destroyed the perfect ranking provided by the first stage. This perfectly explains why passing _too many_ documents to the reranker on SciFact degrades the overall score!
+
+---
+
+## 20. Cloud GPU Hardware Acceleration
+
+In preparation for training my own models, I migrated my execution environment from local CPU to Kaggle Cloud GPUs (NVIDIA T4). To isolate and measure the exact hardware acceleration delta, I re-ran my exact same lightweight models (`BAAI/bge-small-en-v1.5` and `cross-encoder/ms-marco-MiniLM-L-6-v2`) on the GPU.
+
+The latency improvements were profound across the entire pipeline:
+
+### 1. Multi-Stage Pipeline Acceleration
+
+| System Architecture     | CPU Latency (ms) | GPU Latency (ms) | Speedup |
+| ----------------------- | ---------------- | ---------------- | ------- |
+| 1. BM25 Baseline        | ~520 ms          | 257.31 ms        | ~2.0x   |
+| 2. Dense Baseline (BGE) | ~40 ms           | 11.22 ms         | ~3.5x   |
+| 3. Hybrid Fusion (RRF)  | ~550 ms          | 296.60 ms        | ~1.8x   |
+| 4. Hybrid + Re-ranker   | ~11,000 ms       | 808.89 ms        | ~13.5x  |
+
+_Note: BM25 executes entirely on CPU. Its 2x speedup is simply due to Kaggle's faster Xeon processors compared to my local machine._
+
+### 2. Reranker Depth Acceleration
+
+| Rerank Depth | CPU Latency (ms) | GPU Latency (ms) | Speedup |
+| ------------ | ---------------- | ---------------- | ------- |
+| Top 10       | ~3,500           | 357.98           | ~9.7x   |
+| Top 25       | ~2,700           | 433.16           | ~6.2x   |
+| Top 100      | ~11,000          | 805.30           | ~13.6x  |
+| Top 200      | ~20,400          | 1286.47          | ~15.8x  |
+
+**Conclusion:**
+
+1. **The Reranker Bottleneck is Solved:** On CPU, reranking 100 documents took an unacceptable 11 seconds. On GPU, it takes only 805 ms.
+2. **Dense Retrieval is Free on GPU:** The `BAAI/bge-small-en-v1.5` Bi-Encoder latency dropped from ~40ms (CPU) to an astonishing **11.22 ms** on GPU.
+3. **Prepared for Heavy Models:** With the T4 GPU devouring my lightweight models in sub-second times, I now have the computational headroom to upgrade my architecture to massive, state-of-the-art models (like `BAAI/bge-large-en-v1.5` and `BAAI/bge-reranker-large`) in future iterations.
+
+---
+
+## 21. Foundations of Contrastive & Ranking Data
+
+Now I move from using pre-trained models to actually training (fine-tuning) my own ranking models. The goal is to solve the domain-mismatch problem identified in my Qualitative Error Analysis. Before writing any data-mining scripts, it is critical to master the four classes of samples used in ranking ML. How you select these samples dictates entirely what the model learns.
+
+### 1. Positive Examples ($D^+$)
+
+Documents known to be relevant to the query. In SciFact, these are the cited abstracts that support or refute a given scientific claim (from the ground-truth `qrels`).
+
+### 2. Random Negatives ($D^-_{random}$)
+
+Documents drawn uniformly at random from the entire corpus.
+
+- **Why they are "easy":** If the query is about "myocardial infarction", a random negative might be an abstract on "agricultural crop rotation".
+- **Limitation:** The model easily scores this near zero using surface-level vocabulary alone. It learns almost nothing about subtle semantic boundaries.
+
+### 3. Hard Negatives ($D^-_{hard}$)
+
+Documents that score very high on first-stage lexical or dense retrieval but are _not_ actually relevant.
+
+- **Why they matter:** They share significant vocabulary or broad topical overlap with the query, but fail on the specific factual relation or detail.
+- **The Learning Signal:** Training on hard negatives forces the Cross-Encoder's cross-attention layers to distinguish fine-grained nuances, rather than relying on shallow keyword matching.
+
+### 4. False Negatives (The Danger Zone)
+
+Documents that are actually relevant or partially informative, but are _unlabeled_ in the dataset.
+
+- **The Risk:** In real datasets (including BEIR/SciFact), annotators only evaluate a tiny subset of the corpus. If your first-stage retriever surfaces an unannotated _true_ relevant document and you blindly treat it as a hard negative during training, you actively penalize the model for making a brilliant retrieval.
+
+### Summary Example
+
+- **Query:** _"Cardiovascular effects of drug X"_
+- **Positive:** _"Drug X lowers blood pressure and prevents heart failure."_
+- **Random Negative:** _"Photosynthesis rates in temperate forest canopies."_ (Trivial to reject).
+- **Hard Negative:** _"Drug X causes acute renal failure in rodent trials."_ (Topical overlap, but factually non-relevant to cardiovascular effects. High learning signal).
+- **False Negative:** _"Drug X demonstrates significant cardiac protection."_ (A true match that the annotators missed. Penalizing this will hurt the model).

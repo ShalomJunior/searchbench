@@ -4,6 +4,7 @@ from beir.datasets.data_loader import GenericDataLoader
 
 def load_beir_dataset(
     dataset_name: str = "scifact",
+    split: str = "test"
 ) -> tuple[dict[str, dict[str, str]], dict[str, str], dict[str, dict[str, int]]]:
     """Downloads and loads a BEIR dataset."""
     url = f"https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{dataset_name}.zip"
@@ -19,8 +20,8 @@ def load_beir_dataset(
         print(f"Dataset {dataset_name} already exists locally. Skipping download.")
         data_path = dataset_path
 
-    print("Loading corpus, queries, and qrels...")
-    corpus, queries, qrels = GenericDataLoader(data_path).load(split="test")
+    print(f"Loading corpus, queries, and qrels for split: {split}...")
+    corpus, queries, qrels = GenericDataLoader(data_path).load(split=split)
     return corpus, queries, qrels
 
 def format_beir_corpus(beir_corpus: dict[str, dict[str, str]]) -> dict[str, str]:
