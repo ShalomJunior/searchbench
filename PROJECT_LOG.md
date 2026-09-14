@@ -708,3 +708,30 @@ If we look closely at the equation, it is mathematically identical to the standa
 ### 3. PyTorch Implementation
 
 Because InfoNCE is mathematically equivalent to Cross-Entropy, it is incredibly clean to implement using standard Deep Learning frameworks. I wrote a custom `infonce_loss` PyTorch function and placed it in `src/training/loss.py`. This sets the architectural foundation for the upcoming training loop.
+
+---
+
+## 23. Data Loaders & The Training Loop
+
+With our hard negative triplets generated and the mathematical foundation of InfoNCE established, we can now bridge the gap between data and mathematics by writing the PyTorch training loop.
+
+### 1. In-Batch InfoNCE vs Triplet InfoNCE
+
+The standard formulation of InfoNCE in contrastive learning (used for Bi-Encoders and models like CLIP) relies on an **In-Batch Similarity Matrix**. Instead of explicitly passing one positive and one negative document per query, you pass a batch of $B$ queries and their $B$ corresponding positive documents. The other positive documents in the batch serve as negatives.
+
+- **The Similarity Matrix:** A dot product of $B$ queries and $B$ documents creates a $B \times B$ matrix.
+- **The Positive Diagonal:** The true positive scores land perfectly on the diagonal. The target labels are simply `[0, 1, 2, ..., B-1]`.
+- **Temperature ($\tau$):** The matrix is divided by a temperature scalar before applying Cross Entropy.
+
+### 2. The Cross-Encoder Architectural Caveat
+
+While the $B \times B$ matrix is elegant and fast for Bi-Encoders (because you only do a fast dot-product at the end), there is a critical reason I cannot use it for my Cross-Encoder:
+To build a $B \times B$ matrix with a Cross-Encoder, I would have to perform $B^2$ full Transformer forward passes, because every (query, document) pair must be concatenated and passed through all the deep attention layers. For a batch size of 32, that is 1,024 forward passes per step, which would instantly cause an Out-Of-Memory (OOM) error on most GPUs.
+
+Because of this $O(B^2)$ bottleneck, Cross-Encoders are almost always trained with explicitly mined hard negatives (the `[query, positive, negative]` triplet shape) rather than the full in-batch similarity matrix.
+
+### 3. The Custom Training Loop
+
+To train the Cross-Encoder using my triplet formulation, I bypassed the standard high-level wrappers and wrote a pure PyTorch loop over a Hugging Face `AutoModelForSequenceClassification`.
+
+I created a custom `RankingTripletDataset` to read my `results/hard_negatives.json` file and feed the tokenized pairs to the model. The complete implementation is located in `scripts/train_cross_encoder.py`. This script sets up the actual backpropagation. In future iterations, I will run this fine-tuning job on a GPU and drop the updated weights back into the `CrossEncoderReRanker` to benchmark against the baseline.
