@@ -1,0 +1,5 @@
+beir
+sentence-transformers
+faiss-cpu
+matplotlib
+numpy
