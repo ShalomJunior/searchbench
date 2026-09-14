@@ -47,7 +47,7 @@ _(See [PROJECT_LOG.md](PROJECT_LOG.md) for the complete engineering diary, deep-
 Clone the repository and install the required dependencies (Python 3.10+ recommended):
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/searchbench.git
+git clone https://github.com/ShalomJunior/searchbench.git
 cd searchbench
 pip install -r requirements.txt
 ```
