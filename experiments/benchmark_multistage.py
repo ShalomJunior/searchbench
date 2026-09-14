@@ -57,9 +57,12 @@ def main() -> None:
     # We use our existing RRFHybridEngine instead of HybridRetriever
     hybrid = RRFHybridEngine(bm25_engine=bm25, dense_engine=dense, k=60)
     reranker = CrossEncoderReRanker()
+    
+    finetuned_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results", "fine_tuned_cross_encoder")
+    finetuned_reranker = CrossEncoderReRanker(model_name=finetuned_path) if os.path.exists(finetuned_path) else None
 
-    print(f"\n{'System Architecture':<25} | {'NDCG@10':<10} | {'MRR@10':<10} | {'Latency (ms)':<12}")
-    print("-" * 65)
+    print(f"\n{'System Architecture':<30} | {'NDCG@10':<10} | {'MRR@10':<10} | {'Latency (ms)':<12}")
+    print("-" * 70)
 
     # 1. BM25 Baseline
     evaluate_pipeline("1. BM25", queries, qrels, lambda q: bm25.search(q, flat_corpus, top_k=10))
@@ -77,7 +80,17 @@ def main() -> None:
         # Rerank to get the definitive top 10
         return reranker.rerank(q, candidates, flat_corpus, top_k=10)
 
-    evaluate_pipeline("4. Hybrid + Reranker", queries, qrels, hybrid_plus_reranker)
+    evaluate_pipeline("4. Hybrid + Base Reranker", queries, qrels, hybrid_plus_reranker)
+
+    # 5. Hybrid + Fine-Tuned Cross-Encoder
+    if finetuned_reranker:
+        def hybrid_plus_finetuned(q):
+            candidates = hybrid.search(q, flat_corpus, top_k=100)
+            return finetuned_reranker.rerank(q, candidates, flat_corpus, top_k=10)
+
+        evaluate_pipeline("5. Hybrid + FT Reranker", queries, qrels, hybrid_plus_finetuned)
+    else:
+        print(f"{'5. Hybrid + FT Reranker':<30} | {'N/A':<10} | {'N/A':<10} | {'N/A':<12} (Model not found)")
 
 if __name__ == "__main__":
     main()
