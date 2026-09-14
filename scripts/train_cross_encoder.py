@@ -65,6 +65,13 @@ def main():
             total_loss += loss.item()
             
         print(f"Epoch {epoch + 1} | Average Loss: {total_loss / len(dataloader):.4f}")
+        
+    # 3. Save the Fine-Tuned Model
+    output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results", "fine_tuned_cross_encoder")
+    os.makedirs(output_dir, exist_ok=True)
+    model.save_pretrained(output_dir)
+    tokenizer.save_pretrained(output_dir)
+    print(f"Model successfully saved to {output_dir}")
 
 if __name__ == "__main__":
     main()
