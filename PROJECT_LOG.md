@@ -759,3 +759,19 @@ The experiment was an absolute success.
 1. The **Base Reranker** (0.6888) previously _degraded_ the performance of the pure Dense pipeline (0.7200) because it was out-of-domain (Bing search vs. Scientific text).
 2. By mining Hard Negatives and applying the **InfoNCE Loss**, the model successfully learned the specific lexical and semantic nuances of scientific claims.
 3. The **Fine-Tuned Reranker** (0.7303) shattered the baseline, reclaiming its position as the ultimate precision layer and proving the absolute necessity of domain-specific contrastive learning in modern Information Retrieval architectures.
+
+---
+
+## 25. Out-of-Domain Generalization (BEIR)
+
+With our fine-tuned Cross-Encoder achieving state-of-the-art results on SciFact, we must confront a massive trap in Machine Learning: a model that performs flawlessly on its training data might completely collapse when exposed to real-world, out-of-domain data.
+
+### The Theory of Generalization
+
+We need to understand the difference between the **training distribution** and the **evaluation distribution**.
+
+- **The Problem:** The `ms-marco-MiniLM-L-6-v2` cross-encoder was originally trained on MS MARCO (general web queries). I then fine-tuned it on SciFact (scientific claims).
+- **The Question:** What happens if a user searches for financial data? Will the neural network still understand relevance, or will it fail because the financial vocabulary is completely foreign to both MS MARCO and SciFact?
+- **The Lexical Advantage:** BM25 does not have a "training distribution." It just counts term frequencies. In highly specialized domains where a dense model has never seen the vocabulary, BM25 often beats neural models.
+
+To test this phenomenon empirically, I have upgraded the evaluation pipeline to dynamically load and benchmark any BEIR dataset. We will evaluate the entire multi-stage architecture on **FIQA** (Financial Question Answering), to measure how severely the neural models degrade when pushed outside their comfort zone.

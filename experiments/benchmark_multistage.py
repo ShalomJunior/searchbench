@@ -4,16 +4,18 @@ import time
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import argparse
 from src.bm25 import BM25Engine
 from src.dense import DenseEngine
 from src.hybrid import RRFHybridEngine
 from src.reranker import CrossEncoderReRanker
-from src.evaluation.metrics import ndcg_at_k, mrr
+from src.evaluation.metrics import ndcg_at_k, mrr, recall_at_k
 from src.evaluation.data import load_beir_dataset, format_beir_corpus
 
 def evaluate_pipeline(name: str, queries: dict, qrels: dict, search_func) -> None:
     ndcg_list = []
     mrr_list = []
+    recall_list = []
     total_latency = 0.0
     valid_queries = 0
 
@@ -24,6 +26,9 @@ def evaluate_pipeline(name: str, queries: dict, qrels: dict, search_func) -> Non
         scores = qrels[q_id]
         relevant_ids = [doc_id for doc_id, score in scores.items() if score > 0]
         
+        if not relevant_ids:
+            continue
+        
         start_time = time.perf_counter()
         results = search_func(query)
         total_latency += (time.perf_counter() - start_time)
@@ -32,18 +37,24 @@ def evaluate_pipeline(name: str, queries: dict, qrels: dict, search_func) -> Non
         
         ndcg_list.append(ndcg_at_k(retrieved_ids, scores, k=10))
         mrr_list.append(mrr(retrieved_ids, relevant_ids))
+        recall_list.append(recall_at_k(retrieved_ids, relevant_ids, k=100))
         valid_queries += 1
 
     avg_ndcg = sum(ndcg_list) / len(ndcg_list) if ndcg_list else 0.0
     avg_mrr = sum(mrr_list) / len(mrr_list) if mrr_list else 0.0
+    avg_recall = sum(recall_list) / len(recall_list) if recall_list else 0.0
     avg_latency_ms = (total_latency / valid_queries) * 1000 if valid_queries else 0.0
 
-    print(f"{name:<25} | {avg_ndcg:<10.4f} | {avg_mrr:<10.4f} | {avg_latency_ms:<12.2f}")
+    print(f"{name:<27} | {avg_ndcg:<10.4f} | {avg_mrr:<10.4f} | {avg_recall:<10.4f} | {avg_latency_ms:<12.2f}")
 
 def main() -> None:
-    print("=== Multi-Stage Architecture Benchmark ===")
+    parser = argparse.ArgumentParser(description="Multi-Stage Architecture Benchmark")
+    parser.add_argument("--dataset", type=str, default="scifact", help="BEIR dataset to evaluate on (e.g., scifact, fiqa)")
+    args = parser.parse_args()
+
+    print(f"=== Multi-Stage Architecture Benchmark ({args.dataset.upper()}) ===")
     
-    beir_corpus, queries, qrels = load_beir_dataset("scifact")
+    beir_corpus, queries, qrels = load_beir_dataset(args.dataset)
     flat_corpus = format_beir_corpus(beir_corpus)
 
     print("\nLoading models and building indices (this may take a few minutes)...")
@@ -61,17 +72,17 @@ def main() -> None:
     finetuned_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results", "fine_tuned_cross_encoder")
     finetuned_reranker = CrossEncoderReRanker(model_name=finetuned_path) if os.path.exists(finetuned_path) else None
 
-    print(f"\n{'System Architecture':<30} | {'NDCG@10':<10} | {'MRR@10':<10} | {'Latency (ms)':<12}")
-    print("-" * 70)
+    print(f"\n{'System Architecture':<27} | {'NDCG@10':<10} | {'MRR@10':<10} | {'Recall@100':<10} | {'Latency (ms)':<12}")
+    print("-" * 85)
 
     # 1. BM25 Baseline
-    evaluate_pipeline("1. BM25", queries, qrels, lambda q: bm25.search(q, flat_corpus, top_k=10))
+    evaluate_pipeline("1. BM25", queries, qrels, lambda q: bm25.search(q, flat_corpus, top_k=100))
 
     # 2. Dense Baseline
-    evaluate_pipeline("2. Dense (BGE)", queries, qrels, lambda q: dense.search(q, flat_corpus, top_k=10))
+    evaluate_pipeline("2. Dense (BGE)", queries, qrels, lambda q: dense.search(q, flat_corpus, top_k=100))
 
     # 3. Hybrid (First-Stage)
-    evaluate_pipeline("3. Hybrid (RRF)", queries, qrels, lambda q: hybrid.search(q, flat_corpus, top_k=10))
+    evaluate_pipeline("3. Hybrid (RRF)", queries, qrels, lambda q: hybrid.search(q, flat_corpus, top_k=100))
 
     # 4. Hybrid + Cross-Encoder
     def hybrid_plus_reranker(q):
@@ -90,7 +101,7 @@ def main() -> None:
 
         evaluate_pipeline("5. Hybrid + FT Reranker", queries, qrels, hybrid_plus_finetuned)
     else:
-        print(f"{'5. Hybrid + FT Reranker':<30} | {'N/A':<10} | {'N/A':<10} | {'N/A':<12} (Model not found)")
+        print(f"{'5. Hybrid + FT Reranker':<27} | {'N/A':<10} | {'N/A':<10} | {'N/A':<10} | {'N/A':<12} (Model not found)")
 
 if __name__ == "__main__":
     main()
