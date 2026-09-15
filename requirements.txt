@@ -1,5 +1,6 @@
 beir
 sentence-transformers
 faiss-cpu
+elasticsearch
 matplotlib
 numpy

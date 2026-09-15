@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import argparse
 from src.bm25 import BM25Engine
+from src.elastic import ElasticBM25Engine
 from src.dense import DenseEngine
 from src.hybrid import RRFHybridEngine
 from src.reranker import CrossEncoderReRanker
@@ -51,6 +52,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Multi-Stage Architecture Benchmark")
     parser.add_argument("--dataset", type=str, default="scifact", help="BEIR dataset to evaluate on (e.g., scifact, fiqa)")
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of queries to evaluate (prevents 15h timeouts on large datasets)")
+    parser.add_argument("--use-elastic", action="store_true", help="Use Elasticsearch backend instead of pure Python BM25")
     args = parser.parse_args()
 
     print(f"=== Multi-Stage Architecture Benchmark ({args.dataset.upper()}) ===")
@@ -63,7 +65,14 @@ def main() -> None:
     flat_corpus = format_beir_corpus(beir_corpus)
 
     print("\nLoading models and building indices (this may take a few minutes)...")
-    bm25 = BM25Engine()
+    
+    if args.use_elastic:
+        print("Using ElasticBM25Engine (Ensure Elasticsearch is running on localhost:9200)")
+        bm25 = ElasticBM25Engine()
+    else:
+        print("Using Python BM25Engine (Warning: Slow on large datasets)")
+        bm25 = BM25Engine()
+        
     bm25.fit(flat_corpus)
 
     # We use BGE for the dense baseline to push maximum quality
