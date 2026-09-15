@@ -10,11 +10,14 @@ class ElasticBM25Engine:
     
     def __init__(self, index_name: str = "searchbench_corpus", host: str = "http://localhost:9200"):
         self.index_name = index_name
-        self.es = Elasticsearch([host])
+        self.es = Elasticsearch(host)
         
         # Ensure connection is established
-        if not self.es.ping():
-            raise ConnectionError(f"Could not connect to Elasticsearch at {host}. Is the server running?")
+        try:
+            info = self.es.info()
+            print(f"Connected to Elasticsearch {info['version']['number']}")
+        except Exception as e:
+            raise ConnectionError(f"Could not connect to Elasticsearch at {host}. Error: {e}")
             
     def fit(self, corpus: dict[str, str]) -> None:
         """
