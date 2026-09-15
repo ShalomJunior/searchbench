@@ -1,6 +1,6 @@
 beir
 sentence-transformers
 faiss-cpu
-elasticsearch
+elasticsearch==8.12.0
 matplotlib
 numpy
