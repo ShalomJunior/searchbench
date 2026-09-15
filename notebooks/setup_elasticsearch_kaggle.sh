@@ -16,12 +16,14 @@ tar -xzf elasticsearch-8.12.0-linux-x86_64.tar.gz
 rm elasticsearch-8.12.0-linux-x86_64.tar.gz
 
 echo "Configuring permissions for non-root execution..."
-useradd -m elasticuser
+id -u elasticuser >/dev/null 2>&1 || useradd -m elasticuser
 chown -R elasticuser:elasticuser elasticsearch-8.12.0
 
 echo "Starting Elasticsearch daemon in the background..."
+# We must capture the current working directory because 'su -' changes it
+WORKDIR=$(pwd)
 # We set Java memory to 1GB to prevent Kaggle out-of-memory errors
-su - elasticuser -c "export ES_JAVA_OPTS='-Xms1g -Xmx1g'; ./elasticsearch-8.12.0/bin/elasticsearch -d -E xpack.security.enabled=false -E discovery.type=single-node > /tmp/es.log 2>&1"
+su - elasticuser -c "cd $WORKDIR && export ES_JAVA_OPTS='-Xms1g -Xmx1g'; ./elasticsearch-8.12.0/bin/elasticsearch -d -E xpack.security.enabled=false -E discovery.type=single-node > /tmp/es.log 2>&1"
 
 echo "Waiting for Elasticsearch to boot (this can take up to 60 seconds)..."
 for i in {1..30}; do
