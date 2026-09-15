@@ -20,10 +20,20 @@ useradd -m elasticuser
 chown -R elasticuser:elasticuser elasticsearch-8.12.0
 
 echo "Starting Elasticsearch daemon in the background..."
-su - elasticuser -c "./elasticsearch-8.12.0/bin/elasticsearch -d -E xpack.security.enabled=false -E discovery.type=single-node"
+# We set Java memory to 1GB to prevent Kaggle out-of-memory errors
+su - elasticuser -c "export ES_JAVA_OPTS='-Xms1g -Xmx1g'; ./elasticsearch-8.12.0/bin/elasticsearch -d -E xpack.security.enabled=false -E discovery.type=single-node > /tmp/es.log 2>&1"
 
-echo "Waiting for Elasticsearch to boot (15 seconds)..."
-sleep 15
+echo "Waiting for Elasticsearch to boot (this can take up to 60 seconds)..."
+for i in {1..30}; do
+    if curl -s http://localhost:9200/ > /dev/null; then
+        echo "Elasticsearch is UP and RUNNING!"
+        curl -s http://localhost:9200/
+        exit 0
+    fi
+    echo -n "."
+    sleep 2
+done
 
-echo "Elasticsearch Status:"
-curl -X GET "localhost:9200/"
+echo ""
+echo "ERROR: Elasticsearch failed to start in time. Here are the logs:"
+tail -n 20 /tmp/es.log
