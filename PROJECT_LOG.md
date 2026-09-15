@@ -778,41 +778,71 @@ To test this phenomenon empirically, I have upgraded the evaluation pipeline to 
 
 ---
 
-## 26. The Reality of Generalization (Catastrophic Forgetting)
+## 26. The Reality of Generalization & Scaling
 
-After evaluating the full multi-stage architecture on **FIQA** (Finance) and **TREC-COVID** (Medicine), the results revealed two critical engineering realities about Information Retrieval.
+After evaluating the full multi-stage architecture on **FIQA** (Finance) and **TREC-COVID** (Medicine), the results revealed two critical engineering realities about Information Retrieval: the limits of pedagogical scaling and Catastrophic Forgetting.
 
-### Full Benchmark Results
+### 1. The Python BM25 Bottleneck (Initial Benchmark)
+
+First, I ran the benchmark using our initial pure Python `BM25Engine` built on native dictionaries.
 
 **FIQA (Finance - Evaluated on 1,000 queries due to size):**
 | System Architecture | NDCG@10 | MRR@10 | Recall@100 | Latency (ms) |
 |-----------------------------|---------|--------|------------|--------------|
-| 1. BM25 | 0.1342 | 0.1743 | 0.3434 | 1763.59 |
+| 1. BM25 | 0.1342 | 0.1743 | 0.3434 | **1763.59** |
 | 2. Dense (BGE) | 0.3848 | 0.4734 | 0.6866 | 21.37 |
-| 3. Hybrid (RRF) | 0.2871 | 0.3523 | 0.6629 | 1810.29 |
-| 4. Hybrid + Base Reranker | 0.3759 | 0.4487 | 0.4526 | 2199.27 |
-| **5. Hybrid + FT Reranker** | 0.3454 | 0.4183 | 0.4144 | 2318.82 |
+| 3. Hybrid (RRF) | 0.2871 | 0.3523 | 0.6629 | **1810.29** |
+| 4. Hybrid + Base Reranker | 0.3759 | 0.4487 | 0.4526 | **2199.27** |
+| **5. Hybrid + FT Reranker** | 0.3454 | 0.4183 | 0.4144 | **2318.82** |
 
 **TREC-COVID (Medicine - 50 queries):**
 | System Architecture | NDCG@10 | MRR@10 | Recall@100 | Latency (ms) |
 |-----------------------------|---------|--------|------------|--------------|
-| 1. BM25 | 0.4205 | 0.7188 | 0.0695 | 6935.50 |
+| 1. BM25 | 0.4205 | 0.7188 | 0.0695 | **6935.50** |
 | 2. Dense (BGE) | 0.6452 | 0.8779 | 0.1233 | 39.39 |
-| 3. Hybrid (RRF) | 0.6456 | 0.9389 | 0.1090 | 7008.65 |
-| 4. Hybrid + Base Reranker | 0.7491 | 0.8833 | 0.0215 | 7516.69 |
-| **5. Hybrid + FT Reranker** | 0.7180 | 0.8857 | 0.0199 | 7530.62 |
+| 3. Hybrid (RRF) | 0.6456 | 0.9389 | 0.1090 | **7008.65** |
+| 4. Hybrid + Base Reranker | 0.7491 | 0.8833 | 0.0215 | **7516.69** |
+| **5. Hybrid + FT Reranker** | 0.7180 | 0.8857 | 0.0199 | **7530.62** |
 
-### 1. The Python BM25 Bottleneck
+While Dense Retrieval (FAISS) and Cross-Encoder reranking (GPU) executed in milliseconds, the lexical BM25 baseline became a massive bottleneck. On the 171k documents of TREC-COVID, the pure Python BM25 implementation took nearly **7 seconds per query**.
 
-While Dense Retrieval and Cross-Encoder reranking executed in milliseconds thanks to PyTorch GPU acceleration (FAISS took ~30ms, Reranking top 100 took ~450ms), the lexical BM25 baseline became a massive bottleneck. On the 171k documents of TREC-COVID, the pure Python BM25 implementation took nearly 7 seconds per query. This highlights why production systems rely on highly optimized C++ or Java inverted indices (like Elasticsearch/Lucene) rather than native Python dictionaries for lexical search.
+### 2. The Elasticsearch Upgrade (Production Benchmark)
 
-### 2. Catastrophic Forgetting in Fine-Tuning
+To solve this latency bottleneck, I integrated a production-grade **Elasticsearch** server as the backend for the lexical search engine (`ElasticBM25Engine`).
 
-The most profound discovery came from the performance of the fine-tuned Cross-Encoder on these out-of-domain datasets:
+Here are the results running the exact same queries against the new Elasticsearch backend:
 
-- **FIQA (Finance):** Base Reranker (0.3759) vs. FT Reranker (0.3454) — **Degradation**
-- **TREC-COVID (Medicine):** Base Reranker (0.7491) vs. FT Reranker (0.7180) — **Degradation**
+**FIQA (Finance):**
+| System Architecture | NDCG@10 | MRR@10 | Recall@100 | Latency (ms) |
+|-----------------------------|---------|--------|------------|--------------|
+| 1. BM25 | 0.2536 | 0.3189 | 0.5489 | **9.99** |
+| 2. Dense (BGE) | 0.3848 | 0.4734 | 0.6866 | 21.45 |
+| 3. Hybrid (RRF) | 0.3638 | 0.4502 | 0.6943 | 33.73 |
+| 4. Hybrid + Base Reranker | **0.3696** | 0.4419 | 0.4451 | 405.97 |
+| **5. Hybrid + FT Reranker** | **0.3399** | 0.4123 | 0.4093 | 403.75 |
+
+**TREC-COVID (Medicine):**
+| System Architecture | NDCG@10 | MRR@10 | Recall@100 | Latency (ms) |
+|-----------------------------|---------|--------|------------|--------------|
+| 1. BM25 | 0.5913 | 0.8840 | 0.1117 | **24.03** |
+| 2. Dense (BGE) | 0.6452 | 0.8779 | 0.1233 | 36.80 |
+| 3. Hybrid (RRF) | 0.7498 | 0.9800 | 0.1289 | 60.58 |
+| 4. Hybrid + Base Reranker | **0.7387** | 0.8717 | 0.0213 | 461.16 |
+| **5. Hybrid + FT Reranker** | **0.6959** | 0.8992 | 0.0195 | 471.20 |
+
+By moving from Python dictionaries to Elasticsearch's highly optimized C++/Java inverted indices, the lexical search latency plummeted from ~7,000 ms to **~24 ms**. This conclusively proves why production systems rely on dedicated search infrastructure.
+
+![Latency Comparison](results/plots/latency_comparison.png)
+
+### 3. Catastrophic Forgetting in Fine-Tuning
+
+Finally, comparing the Reranker scores in the final benchmark reveals a profound discovery regarding model generalization:
+
+- **FIQA (Finance):** Base Reranker (0.3696) vs. FT Reranker (0.3399) — **Degradation**
+- **TREC-COVID (Medicine):** Base Reranker (0.7387) vs. FT Reranker (0.6959) — **Degradation**
 
 While the InfoNCE fine-tuning on SciFact hard negatives vastly improved performance on scientific claims, it caused the neural network to "forget" how to evaluate general, financial, and medical texts. The model overfitted to the scientific domain. The Base model (trained on millions of broad MS-MARCO web queries) remained far more robust across unknown domains.
 
 This proves that while domain-specific contrastive learning is incredibly powerful for isolated verticals, deploying a generalized search engine requires training on a massively diverse distribution of hard negatives to avoid **Catastrophic Forgetting**.
+
+![Catastrophic Forgetting](results/plots/catastrophic_forgetting.png)
