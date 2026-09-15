@@ -68,7 +68,7 @@ class ElasticBM25Engine:
         # Force refresh to make documents immediately searchable
         self.es.indices.refresh(index=self.index_name)
         
-    def search(self, query: str, top_k: int = 100) -> list[tuple[str, float]]:
+    def search(self, query: str, corpus: dict[str, str] = None, top_k: int = 100) -> list[tuple[str, float]]:
         """
         Retrieves top_k documents using Elasticsearch's native BM25.
         Returns a list of (doc_id, score) tuples.
