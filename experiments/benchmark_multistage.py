@@ -50,11 +50,16 @@ def evaluate_pipeline(name: str, queries: dict, qrels: dict, search_func) -> Non
 def main() -> None:
     parser = argparse.ArgumentParser(description="Multi-Stage Architecture Benchmark")
     parser.add_argument("--dataset", type=str, default="scifact", help="BEIR dataset to evaluate on (e.g., scifact, fiqa)")
+    parser.add_argument("--limit", type=int, default=None, help="Maximum number of queries to evaluate (prevents 15h timeouts on large datasets)")
     args = parser.parse_args()
 
     print(f"=== Multi-Stage Architecture Benchmark ({args.dataset.upper()}) ===")
     
     beir_corpus, queries, qrels = load_beir_dataset(args.dataset)
+    
+    if args.limit:
+        print(f"Limiting evaluation to the first {args.limit} queries...")
+        queries = dict(list(queries.items())[:args.limit])
     flat_corpus = format_beir_corpus(beir_corpus)
 
     print("\nLoading models and building indices (this may take a few minutes)...")
