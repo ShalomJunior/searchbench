@@ -2,6 +2,7 @@ import time
 from typing import Any
 from src.evaluation.metrics import ndcg_at_k, mrr, recall_at_k
 
+
 def evaluate_engine(
     engine: Any,
     queries: dict[str, str],
@@ -17,7 +18,7 @@ def evaluate_engine(
 
     print("\nRunning Evaluation...")
     start_eval = time.time()
-    
+
     for q_id, query in queries.items():
         # Safety guard: skip queries with no ground truth
         if q_id not in qrels:
@@ -29,10 +30,10 @@ def evaluate_engine(
         retrieved_ids = [doc_id for doc_id, _ in results]
         relevant_ids = [doc_id for doc_id, score in scores.items() if score > 0]
 
-        ndcg_list.append(ndcg_at_k(retrieved_ids, scores, k=10)) # type: ignore
-        mrr_list.append(mrr(retrieved_ids, relevant_ids, k=10)) # type: ignore
-        recall_10_list.append(recall_at_k(retrieved_ids, relevant_ids, k=10)) # type: ignore
-        recall_100_list.append(recall_at_k(retrieved_ids, relevant_ids, k=100)) # type: ignore
+        ndcg_list.append(ndcg_at_k(retrieved_ids, scores, k=10))  # type: ignore
+        mrr_list.append(mrr(retrieved_ids, relevant_ids, k=10))  # type: ignore
+        recall_10_list.append(recall_at_k(retrieved_ids, relevant_ids, k=10))  # type: ignore
+        recall_100_list.append(recall_at_k(retrieved_ids, relevant_ids, k=100))  # type: ignore
 
     print(f"Evaluation completed in {time.time() - start_eval:.4f} seconds.\n")
 

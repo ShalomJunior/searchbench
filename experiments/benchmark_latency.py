@@ -9,9 +9,10 @@ from src.dense import DenseEngine
 from src.hybrid import RRFHybridEngine
 from src.evaluation.data import load_beir_dataset, format_beir_corpus
 
+
 def main() -> None:
     print("=== Latency Measurement Benchmark ===")
-    
+
     # 1. Load Data
     beir_corpus, queries, qrels = load_beir_dataset("scifact")
     flat_corpus = format_beir_corpus(beir_corpus)
@@ -34,7 +35,7 @@ def main() -> None:
     for q_id, query in queries.items():
         if q_id not in qrels:
             continue
-        
+
         # Measure BM25
         t0 = time.perf_counter()
         bm25.search(query, flat_corpus, top_k=100)
@@ -62,10 +63,13 @@ def main() -> None:
     print(f"RRF Fusion Overhead : {avg_fusion:>6.2f} ms")
     print("-" * 45)
     print(f"Total Pipeline      : {avg_total:>6.2f} ms")
-    
+
     print("\nNote: The total pipeline runs sequentially right now.")
     print("In production, BM25 and Dense are executed asynchronously in parallel,")
-    print(f"which would bring the total latency closer to max(BM25, Dense) + Fusion = {max(avg_bm25, avg_dense) + avg_fusion:.2f} ms.")
+    print(
+        f"which would bring the total latency closer to max(BM25, Dense) + Fusion = {max(avg_bm25, avg_dense) + avg_fusion:.2f} ms."
+    )
+
 
 if __name__ == "__main__":
     main()

@@ -9,9 +9,10 @@ from src.hybrid import WeightedHybridEngine
 from src.evaluation.metrics import ndcg_at_k, mrr, recall_at_k
 from src.evaluation.data import load_beir_dataset, format_beir_corpus
 
+
 def main() -> None:
     print("=== Weighted Hybrid Alpha Sweep ===")
-    
+
     # 1. Load Data (Using centralized data module)
     beir_corpus, queries, qrels = load_beir_dataset("scifact")
     flat_corpus = format_beir_corpus(beir_corpus)
@@ -31,13 +32,13 @@ def main() -> None:
 
     for alpha in alphas:
         hybrid = WeightedHybridEngine(bm25_engine=bm25, dense_engine=dense, alpha=alpha)
-        
+
         ndcg_list, mrr_list, recall_list = [], [], []
 
         for q_id, query in queries.items():
             if q_id not in qrels:
                 continue
-            
+
             results = hybrid.search(query, flat_corpus, top_k=100)
             scores = qrels[q_id]
 
@@ -52,7 +53,10 @@ def main() -> None:
         avg_mrr = sum(mrr_list) / len(mrr_list) if mrr_list else 0.0
         avg_recall = sum(recall_list) / len(recall_list) if recall_list else 0.0
 
-        print(f"{alpha:<8.2f} | {avg_ndcg:<10.4f} | {avg_mrr:<10.4f} | {avg_recall:<12.4f}")
+        print(
+            f"{alpha:<8.2f} | {avg_ndcg:<10.4f} | {avg_mrr:<10.4f} | {avg_recall:<12.4f}"
+        )
+
 
 if __name__ == "__main__":
     main()

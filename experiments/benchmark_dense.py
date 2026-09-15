@@ -9,6 +9,7 @@ from src.dense import DenseEngine
 from src.evaluation.data import load_beir_dataset, format_beir_corpus
 from src.evaluation.evaluator import evaluate_engine
 
+
 def main() -> None:
     print("=== Dense Retrieval Benchmark (SciFact) ===")
 
@@ -21,13 +22,16 @@ def main() -> None:
     # 2. Initialize and Fit DenseEngine
     engine = DenseEngine(model_name="all-MiniLM-L6-v2")
     print("\nBuilding Dense Index (Encoding corpus)...")
-    print("Note: This will take longer than BM25 because the transformer has to process every document.")
+    print(
+        "Note: This will take longer than BM25 because the transformer has to process every document."
+    )
     start_time = time.time()
-    engine.fit(flat_corpus) # type: ignore
+    engine.fit(flat_corpus)  # type: ignore
     print(f"Index built in {time.time() - start_time:.4f} seconds.")
 
     # 3. Evaluate
     evaluate_engine(engine, queries, qrels, flat_corpus)
+
 
 if __name__ == "__main__":
     main()

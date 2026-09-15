@@ -11,9 +11,10 @@ from src.reranker import CrossEncoderReRanker
 from src.evaluation.metrics import ndcg_at_k
 from src.evaluation.data import load_beir_dataset, format_beir_corpus
 
+
 def main() -> None:
     print("=== Day 26: Re-ranking Error Analysis ===")
-    
+
     beir_corpus, queries, qrels = load_beir_dataset("scifact")
     flat_corpus = format_beir_corpus(beir_corpus)
 
@@ -52,30 +53,41 @@ def main() -> None:
             ndcg_after = ndcg_at_k(reranked_top10, scores, k=10)
             delta = ndcg_after - ndcg_before
 
-            cases.append({
-                "query_id": q_id,
-                "query": query,
-                "ndcg_delta": delta,
-                "ndcg_before": ndcg_before,
-                "ndcg_after": ndcg_after,
-                "relevant_docs": list(relevant_doc_ids),
-                "before_top3": hybrid_top10[:3],
-                "after_top3": reranked_top10[:3],
-            })
+            cases.append(
+                {
+                    "query_id": q_id,
+                    "query": query,
+                    "ndcg_delta": delta,
+                    "ndcg_before": ndcg_before,
+                    "ndcg_after": ndcg_after,
+                    "relevant_docs": list(relevant_doc_ids),
+                    "before_top3": hybrid_top10[:3],
+                    "after_top3": reranked_top10[:3],
+                }
+            )
 
     # Sort queries by absolute change to inspect the most dramatic rank shifts
     cases.sort(key=lambda x: abs(x["ndcg_delta"]), reverse=True)
     selected_cases = cases[:20]
 
-    out_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results", "rerank_error_analysis_20.json")
+    out_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "results",
+        "rerank_error_analysis_20.json",
+    )
     with open(out_path, "w") as f:
         json.dump(selected_cases, f, indent=2)
 
     print(f"\nSaved 20 key differential cases to {out_path}\n")
-    print(f"{'Query ID':<10} | {'NDCG Delta':<12} | {'Before Top-1':<14} | {'After Top-1':<14}")
+    print(
+        f"{'Query ID':<10} | {'NDCG Delta':<12} | {'Before Top-1':<14} | {'After Top-1':<14}"
+    )
     print("-" * 55)
     for c in selected_cases[:5]:
-        print(f"{c['query_id']:<10} | {c['ndcg_delta']:<+12.4f} | {str(c['before_top3'][0]):<14} | {str(c['after_top3'][0]):<14}")
+        print(
+            f"{c['query_id']:<10} | {c['ndcg_delta']:<+12.4f} | {str(c['before_top3'][0]):<14} | {str(c['after_top3'][0]):<14}"
+        )
+
 
 if __name__ == "__main__":
     main()

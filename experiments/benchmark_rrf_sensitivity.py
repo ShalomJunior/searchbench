@@ -10,9 +10,10 @@ from src.hybrid import RRFHybridEngine
 from src.evaluation.metrics import ndcg_at_k, mrr, recall_at_k
 from src.evaluation.data import load_beir_dataset, format_beir_corpus
 
+
 def main() -> None:
     print("=== RRF Sensitivity Analysis (k Sweep) ===")
-    
+
     # 1. Load Data
     beir_corpus, queries, qrels = load_beir_dataset("scifact")
     flat_corpus = format_beir_corpus(beir_corpus)
@@ -34,13 +35,13 @@ def main() -> None:
 
     for k in k_values:
         rrf = RRFHybridEngine(bm25, dense, k=k)
-        
+
         ndcg_list, mrr_list, recall_list = [], [], []
 
         for q_id, query in queries.items():
             if q_id not in qrels:
                 continue
-            
+
             results = rrf.search(query, flat_corpus, top_k=100)
             scores = qrels[q_id]
 
@@ -59,13 +60,16 @@ def main() -> None:
         results_data.append([k, avg_ndcg, avg_mrr, avg_recall])
 
     # 3. Export to CSV for plotting
-    csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results", "rrf_results.csv")
+    csv_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "results", "rrf_results.csv"
+    )
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["k", "NDCG@10", "MRR@10", "Recall@100"])
         writer.writerows(results_data)
-        
+
     print(f"\nExported results to {csv_path}")
+
 
 if __name__ == "__main__":
     main()

@@ -45,7 +45,9 @@ class BM25Engine:
             self.idf_cache[term] = math.log(1 + (N - df + 0.5) / (df + 0.5))
         return self.idf_cache[term]
 
-    def score(self, query_tokens: list[str], doc_id: DocID, doc_tokens: list[str]) -> float:
+    def score(
+        self, query_tokens: list[str], doc_id: DocID, doc_tokens: list[str]
+    ) -> float:
         """
         Computes the final BM25 score for a specific document against a query.
         Return the final float score for this document against the query.
@@ -61,7 +63,9 @@ class BM25Engine:
                 score += idf * (num / den)
         return score
 
-    def search(self, query: str, corpus: dict[DocID, str], top_k: int = 100) -> list[tuple[DocID, float]]:
+    def search(
+        self, query: str, corpus: dict[DocID, str], top_k: int = 100
+    ) -> list[tuple[DocID, float]]:
         """
         Executes a search query against the corpus using BM25 ranking.
         Uses the inverted index for O(1) candidate filtering, and a min-heap
@@ -101,9 +105,9 @@ def parameter_experiment():
     print("Doc 1: short (1 hit) vs Doc 3: long (1 hit)")
     for b in [0.0, 0.5, 0.75, 1.0]:
         engine = BM25Engine(k1=1.5, b=b)
-        engine.fit(toy_corpus) # type: ignore
-        res1 = engine.score(query.split(), 1, toy_corpus[1].split()) # type: ignore
-        res3 = engine.score(query.split(), 3, toy_corpus[3].split()) # type: ignore
+        engine.fit(toy_corpus)  # type: ignore
+        res1 = engine.score(query.split(), 1, toy_corpus[1].split())  # type: ignore
+        res3 = engine.score(query.split(), 3, toy_corpus[3].split())  # type: ignore
         print(f"b={b:<4} | Doc 1 (short): {res1:.4f} | Doc 3 (long): {res3:.4f}")
 
     print("\n--- Testing Term Frequency Saturation (k1) ---")
@@ -111,9 +115,9 @@ def parameter_experiment():
     print("Doc 1: 1 hit vs Doc 2: 5 hits")
     for k1 in [0.1, 1.5, 3.0, 10.0]:
         engine = BM25Engine(k1=k1, b=0.75)
-        engine.fit(toy_corpus) # type: ignore
-        res1 = engine.score(query.split(), 1, toy_corpus[1].split()) # type: ignore
-        res2 = engine.score(query.split(), 2, toy_corpus[2].split()) # type: ignore
+        engine.fit(toy_corpus)  # type: ignore
+        res1 = engine.score(query.split(), 1, toy_corpus[1].split())  # type: ignore
+        res2 = engine.score(query.split(), 2, toy_corpus[2].split())  # type: ignore
         print(f"k1={k1:<4} | Doc 1 (1 hit): {res1:.4f} | Doc 2 (5 hits): {res2:.4f}")
 
 

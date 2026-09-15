@@ -18,18 +18,24 @@ class DenseEngine:
         self.doc_ids = list(corpus.keys())
 
         # 1. Encode with normalization (crucial for Cosine Similarity) and cast to float32
-        vectors: np.ndarray = self.model.encode(doc_texts, normalize_embeddings=True, show_progress_bar=True).astype(np.float32)
+        vectors: np.ndarray = self.model.encode(
+            doc_texts, normalize_embeddings=True, show_progress_bar=True
+        ).astype(np.float32)
 
         # 2. Initialize and populate the index using Inner Product (IP) for Cosine Similarity
         self.index = faiss.IndexFlatIP(vectors.shape[1])
         self.index.add(vectors)
 
-    def search(self, query: str, corpus: dict[DocID, str] = None, top_k: int = 100) -> list[tuple[DocID, float]]:
+    def search(
+        self, query: str, corpus: dict[DocID, str] = None, top_k: int = 100
+    ) -> list[tuple[DocID, float]]:
         if not self.index:
             return []
 
         # Encode query with normalization
-        query_vector: np.ndarray = self.model.encode([query], normalize_embeddings=True).astype(np.float32)
+        query_vector: np.ndarray = self.model.encode(
+            [query], normalize_embeddings=True
+        ).astype(np.float32)
 
         distances, faiss_indices = self.index.search(query_vector, top_k)
 

@@ -4,13 +4,18 @@ from src.dense import DenseEngine
 
 DocID = str | int
 
+
 class WeightedHybridEngine:
-    def __init__(self, bm25_engine: BM25Engine, dense_engine: DenseEngine, alpha: float = 0.5) -> None:
+    def __init__(
+        self, bm25_engine: BM25Engine, dense_engine: DenseEngine, alpha: float = 0.5
+    ) -> None:
         self.bm25 = bm25_engine
         self.dense = dense_engine
         self.alpha = alpha
 
-    def _normalize_scores(self, results: list[tuple[DocID, float]]) -> dict[DocID, float]:
+    def _normalize_scores(
+        self, results: list[tuple[DocID, float]]
+    ) -> dict[DocID, float]:
         """
         TODO: Implement Min-Max normalization.
         1. Find the min and max scores in the results list.
@@ -25,7 +30,9 @@ class WeightedHybridEngine:
             return {doc_id: 0.0 for doc_id, _ in results}
         return {doc_id: (score - mn) / (mx - mn) for doc_id, score in results}
 
-    def search(self, query: str, corpus: dict[DocID, str], top_k: int = 100) -> list[tuple[DocID, float]]:
+    def search(
+        self, query: str, corpus: dict[DocID, str], top_k: int = 100
+    ) -> list[tuple[DocID, float]]:
         """
         TODO: Implement Score Fusion.
         1. Run self.bm25.search() and self.dense.search().
@@ -46,18 +53,27 @@ class WeightedHybridEngine:
         for doc_id in set(normalized_bm25.keys()) | set(normalized_dense.keys()):
             bm25_score = normalized_bm25.get(doc_id, 0.0)
             dense_score = normalized_dense.get(doc_id, 0.0)
-            combined_scores[doc_id] = self.alpha * bm25_score + (1 - self.alpha) * dense_score
+            combined_scores[doc_id] = (
+                self.alpha * bm25_score + (1 - self.alpha) * dense_score
+            )
 
-        sorted_results = sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)
+        sorted_results = sorted(
+            combined_scores.items(), key=lambda x: x[1], reverse=True
+        )
         return sorted_results[:top_k]
 
+
 class RRFHybridEngine:
-    def __init__(self, bm25_engine: BM25Engine, dense_engine: DenseEngine, k: int = 60) -> None:
+    def __init__(
+        self, bm25_engine: BM25Engine, dense_engine: DenseEngine, k: int = 60
+    ) -> None:
         self.bm25 = bm25_engine
         self.dense = dense_engine
         self.k = k
 
-    def search(self, query: str, corpus: dict[DocID, str], top_k: int = 100) -> list[tuple[DocID, float]]:
+    def search(
+        self, query: str, corpus: dict[DocID, str], top_k: int = 100
+    ) -> list[tuple[DocID, float]]:
         """
         TODO: Implement Reciprocal Rank Fusion.
         1. Run self.bm25.search() and self.dense.search().

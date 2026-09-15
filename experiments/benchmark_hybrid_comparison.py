@@ -9,6 +9,7 @@ from src.hybrid import WeightedHybridEngine, RRFHybridEngine
 from src.evaluation.metrics import ndcg_at_k, mrr, recall_at_k
 from src.evaluation.data import load_beir_dataset, format_beir_corpus
 
+
 def evaluate_engine(engine, queries, qrels, corpus, name):
     ndcg_list, mrr_list, recall_list = [], [], []
     for q_id, query in queries.items():
@@ -30,9 +31,10 @@ def evaluate_engine(engine, queries, qrels, corpus, name):
 
     print(f"{name:<25} | {avg_ndcg:<10.4f} | {avg_mrr:<10.4f} | {avg_recall:<12.4f}")
 
+
 def main() -> None:
     print("=== Ultimate Search Architecture Comparison ===")
-    
+
     # 1. Load Data
     beir_corpus, queries, qrels = load_beir_dataset("scifact")
     flat_corpus = format_beir_corpus(beir_corpus)
@@ -47,7 +49,7 @@ def main() -> None:
         print(f"\n{'='*65}")
         print(f"Testing with Dense Model: {model_name}")
         print(f"{'='*65}")
-        
+
         dense = DenseEngine(model_name=model_name)
         dense.fit(flat_corpus)
 
@@ -56,11 +58,16 @@ def main() -> None:
 
         print(f"\n{'System':<25} | {'NDCG@10':<10} | {'MRR':<10} | {'Recall@100':<12}")
         print("-" * 65)
-        
+
         evaluate_engine(bm25, queries, qrels, flat_corpus, "BM25 (Baseline)")
-        evaluate_engine(dense, queries, qrels, flat_corpus, f"Dense ({model_name.split('/')[-1]})")
-        evaluate_engine(weighted, queries, qrels, flat_corpus, "Weighted Hybrid (a=0.25)")
+        evaluate_engine(
+            dense, queries, qrels, flat_corpus, f"Dense ({model_name.split('/')[-1]})"
+        )
+        evaluate_engine(
+            weighted, queries, qrels, flat_corpus, "Weighted Hybrid (a=0.25)"
+        )
         evaluate_engine(rrf, queries, qrels, flat_corpus, "RRF Hybrid (k=60)")
+
 
 if __name__ == "__main__":
     main()

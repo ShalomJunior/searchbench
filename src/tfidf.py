@@ -31,19 +31,28 @@ def tf(term: str, doc_tokens: list[str]) -> float:
     return doc_tokens.count(term) / len(doc_tokens)
 
 
-def idf(term: str, corpus: dict[DocID, str], index: defaultdict[str, list[DocID]]) -> float:
+def idf(
+    term: str, corpus: dict[DocID, str], index: defaultdict[str, list[DocID]]
+) -> float:
     """Calculate inverse document frequency."""
     if not term in index:
         return 0.0
     return log(len(corpus) / len(index[term]))
 
 
-def tfidf(term: str, doc_tokens: list[str], corpus: dict[DocID, str], index: defaultdict[str, list[DocID]]) -> float:
+def tfidf(
+    term: str,
+    doc_tokens: list[str],
+    corpus: dict[DocID, str],
+    index: defaultdict[str, list[DocID]],
+) -> float:
     """Calculate the full TF-IDF score."""
     return tf(term, doc_tokens) * idf(term, corpus, index)
 
 
-def search(query: str, corpus: dict[DocID, str], index: defaultdict[str, list[DocID]]) -> list[tuple[DocID, float]]:
+def search(
+    query: str, corpus: dict[DocID, str], index: defaultdict[str, list[DocID]]
+) -> list[tuple[DocID, float]]:
     """
     Process the query, calculate cosine similarity between the query
     and all documents, and return a ranked list of document IDs.
