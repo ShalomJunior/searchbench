@@ -775,3 +775,44 @@ We need to understand the difference between the **training distribution** and t
 - **The Lexical Advantage:** BM25 does not have a "training distribution." It just counts term frequencies. In highly specialized domains where a dense model has never seen the vocabulary, BM25 often beats neural models.
 
 To test this phenomenon empirically, I have upgraded the evaluation pipeline to dynamically load and benchmark any BEIR dataset. We will evaluate the entire multi-stage architecture on **FIQA** (Financial Question Answering), to measure how severely the neural models degrade when pushed outside their comfort zone.
+
+---
+
+## 26. The Reality of Generalization (Catastrophic Forgetting)
+
+After evaluating the full multi-stage architecture on **FIQA** (Finance) and **TREC-COVID** (Medicine), the results revealed two critical engineering realities about Information Retrieval.
+
+### Full Benchmark Results
+
+**FIQA (Finance - Evaluated on 1,000 queries due to size):**
+| System Architecture | NDCG@10 | MRR@10 | Recall@100 | Latency (ms) |
+|-----------------------------|---------|--------|------------|--------------|
+| 1. BM25 | 0.1342 | 0.1743 | 0.3434 | 1763.59 |
+| 2. Dense (BGE) | 0.3848 | 0.4734 | 0.6866 | 21.37 |
+| 3. Hybrid (RRF) | 0.2871 | 0.3523 | 0.6629 | 1810.29 |
+| 4. Hybrid + Base Reranker | 0.3759 | 0.4487 | 0.4526 | 2199.27 |
+| **5. Hybrid + FT Reranker** | 0.3454 | 0.4183 | 0.4144 | 2318.82 |
+
+**TREC-COVID (Medicine - 50 queries):**
+| System Architecture | NDCG@10 | MRR@10 | Recall@100 | Latency (ms) |
+|-----------------------------|---------|--------|------------|--------------|
+| 1. BM25 | 0.4205 | 0.7188 | 0.0695 | 6935.50 |
+| 2. Dense (BGE) | 0.6452 | 0.8779 | 0.1233 | 39.39 |
+| 3. Hybrid (RRF) | 0.6456 | 0.9389 | 0.1090 | 7008.65 |
+| 4. Hybrid + Base Reranker | 0.7491 | 0.8833 | 0.0215 | 7516.69 |
+| **5. Hybrid + FT Reranker** | 0.7180 | 0.8857 | 0.0199 | 7530.62 |
+
+### 1. The Python BM25 Bottleneck
+
+While Dense Retrieval and Cross-Encoder reranking executed in milliseconds thanks to PyTorch GPU acceleration (FAISS took ~30ms, Reranking top 100 took ~450ms), the lexical BM25 baseline became a massive bottleneck. On the 171k documents of TREC-COVID, the pure Python BM25 implementation took nearly 7 seconds per query. This highlights why production systems rely on highly optimized C++ or Java inverted indices (like Elasticsearch/Lucene) rather than native Python dictionaries for lexical search.
+
+### 2. Catastrophic Forgetting in Fine-Tuning
+
+The most profound discovery came from the performance of the fine-tuned Cross-Encoder on these out-of-domain datasets:
+
+- **FIQA (Finance):** Base Reranker (0.3759) vs. FT Reranker (0.3454) — **Degradation**
+- **TREC-COVID (Medicine):** Base Reranker (0.7491) vs. FT Reranker (0.7180) — **Degradation**
+
+While the InfoNCE fine-tuning on SciFact hard negatives vastly improved performance on scientific claims, it caused the neural network to "forget" how to evaluate general, financial, and medical texts. The model overfitted to the scientific domain. The Base model (trained on millions of broad MS-MARCO web queries) remained far more robust across unknown domains.
+
+This proves that while domain-specific contrastive learning is incredibly powerful for isolated verticals, deploying a generalized search engine requires training on a massively diverse distribution of hard negatives to avoid **Catastrophic Forgetting**.
