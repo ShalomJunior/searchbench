@@ -53,9 +53,10 @@ datasets = [
     "SciFact\n(In-Domain)",
     "FIQA\n(Out-of-Domain)",
     "TREC-COVID\n(Out-of-Domain)",
+    "ArguAna\n(Out-of-Domain)",
 ]
-base_scores = [0.6888, 0.3696, 0.7387]
-ft_scores = [0.7303, 0.3399, 0.6959]
+base_scores = [0.6888, 0.3696, 0.7387, 0.3092]
+ft_scores = [0.7303, 0.3399, 0.6959, 0.2780]
 
 x = np.arange(len(datasets))
 width = 0.35
@@ -118,6 +119,15 @@ ax.annotate(
     "Degradation",
     xy=(2.17, 0.69),
     xytext=(2.17, 0.61),
+    arrowprops=dict(facecolor="red", shrink=0.05),
+    color="red",
+    fontweight="bold",
+    ha="center",
+)
+ax.annotate(
+    "Degradation",
+    xy=(3.17, 0.27),
+    xytext=(3.17, 0.19),
     arrowprops=dict(facecolor="red", shrink=0.05),
     color="red",
     fontweight="bold",
