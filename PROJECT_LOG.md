@@ -896,16 +896,19 @@ Before writing the integration pipeline, it is critical to understand the mechan
 
 ## 28. RAG Evaluation: 0.5B vs 7B
 
-Following the integration of the RAG Generator, we ran an empirical comparison between a small local model (`Qwen2.5-0.5B-Instruct`) and a larger cloud-accelerated model (`Qwen2.5-7B-Instruct`) using Kaggle's T4 GPUs with 4-bit quantization.
+Following the integration of the RAG Generator, i ran an empirical comparison between a small local model (`Qwen2.5-0.5B-Instruct`) and a larger cloud-accelerated model (`Qwen2.5-7B-Instruct`) using Kaggle's T4 GPUs with 4-bit quantization.
 
 The goal was to measure the model's ability to ground its answers using explicit citations (`[doc_id]`) from the provided documents.
 
 ### Quantitative Improvements
 
-- **Citation Adherence:** The 0.5B model completely failed the strict citation formatting, successfully citing documents in only 4/50 queries. The 7B model achieved **40/50** successfully cited answers.
-- **Hallucination:** Neither model invented fake document IDs (0 instances of referring to an absent document).
-- **Generation Stability:** The 0.5B model abruptly cut off mid-sentence 5 times. The 7B model had 0 interrupted responses.
-- _Note: The 10 queries where the 7B model did not provide a citation were justified abstentions (the model correctly determined the answer was not in the text)._
+| Metric | Qwen2.5-0.5B (Local) | Qwen2.5-7B (Kaggle GPU) |
+| --- | --- | --- |
+| **Successful Citations `[doc_id]`** | 4 / 50 | **40 / 50** |
+| **Hallucinated Citations** | 0 | 0 |
+| **Cut-off / Interrupted Answers** | 5 | **0** |
+
+_Note: The 10 queries where the 7B model did not provide a citation were justified abstentions (the model correctly determined the answer was not in the text)._
 
 ### Qualitative Improvements (7B)
 
