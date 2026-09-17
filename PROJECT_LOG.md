@@ -902,11 +902,11 @@ The goal was to measure the model's ability to ground its answers using explicit
 
 ### Quantitative Improvements
 
-| Metric | Qwen2.5-0.5B (Local) | Qwen2.5-7B (Kaggle GPU) |
-| --- | --- | --- |
-| **Successful Citations `[doc_id]`** | 4 / 50 | **40 / 50** |
-| **Hallucinated Citations** | 0 | 0 |
-| **Cut-off / Interrupted Answers** | 5 | **0** |
+| Metric                              | Qwen2.5-0.5B (Local) | Qwen2.5-7B (Kaggle GPU) |
+| ----------------------------------- | -------------------- | ----------------------- |
+| **Successful Citations `[doc_id]`** | 4 / 50               | **40 / 50**             |
+| **Hallucinated Citations**          | 0                    | 0                       |
+| **Cut-off / Interrupted Answers**   | 5                    | **0**                   |
 
 _Note: The 10 queries where the 7B model did not provide a citation were justified abstentions (the model correctly determined the answer was not in the text)._
 
@@ -927,8 +927,3 @@ Despite its size, the 7B model still exhibits specific RAG failure modes that re
 - **Unsupported Justification (Q183):** Hallucinated a logical deduction (continuous marrow contribution) from a text that only supported local macrophage maintenance.
 - **Misquotation (Q219):** Altered a direct quote inside quotation marks (wrote T(H)2 instead of T(H)1).
 - **Misattribution (Q185):** Cited a document about CHEK2 genetic variants to support a completely unrelated claim about hormonal influences.
-
-### Next Steps
-
-1. Implement a robust JSON evaluation schema to separately measure: Exactitude, Citation Fidelity, and Justified Abstentions.
-2. Store execution metadata (model version, quantization flags, hardware) directly inside the generated JSON results for reproducibility.
