@@ -893,3 +893,39 @@ Before writing the integration pipeline, it is critical to understand the mechan
 - **Grounding**: The architectural challenge of forcing the LLM to rely _strictly_ on the retrieved text to formulate its answer, actively suppressing its urge to use its pre-training knowledge.
 - **Hallucination (The RAG Variant)**: Even with perfectly relevant documents provided in the prompt, the LLM might still ignore them and invent facts.
 - **Citation Extraction**: The complex mechanism of forcing the LLM to map every generated sentence back to the exact passage ID (e.g., `[doc_id]`) that mathematically supports it, ensuring full traceability and zero-trust verifiability of the generated answer.
+
+## 28. RAG Evaluation: 0.5B vs 7B
+
+Following the integration of the RAG Generator, we ran an empirical comparison between a small local model (`Qwen2.5-0.5B-Instruct`) and a larger cloud-accelerated model (`Qwen2.5-7B-Instruct`) using Kaggle's T4 GPUs with 4-bit quantization.
+
+The goal was to measure the model's ability to ground its answers using explicit citations (`[doc_id]`) from the provided documents.
+
+### Quantitative Improvements
+
+- **Citation Adherence:** The 0.5B model completely failed the strict citation formatting, successfully citing documents in only 4/50 queries. The 7B model achieved **40/50** successfully cited answers.
+- **Hallucination:** Neither model invented fake document IDs (0 instances of referring to an absent document).
+- **Generation Stability:** The 0.5B model abruptly cut off mid-sentence 5 times. The 7B model had 0 interrupted responses.
+- _Note: The 10 queries where the 7B model did not provide a citation were justified abstentions (the model correctly determined the answer was not in the text)._
+
+### Qualitative Improvements (7B)
+
+The 7B model successfully corrected severe logical errors made by the smaller model:
+
+- **Query 42:** Correctly recognized a protective effect instead of hallucinating an increased vulnerability.
+- **Query 142/143:** Successfully distinguished opposing claims about infection risks.
+- **Query 216:** Understood the correct directionality of an effect on cell survival.
+- **Query 5:** Correctly calculated a mathematical proportion (1/2000) instead of blindly repeating a raw number.
+
+### Known Regressions & Flaws (7B)
+
+Despite its size, the 7B model still exhibits specific RAG failure modes that require future prompt tuning or model scaling (e.g., Llama-3 8B or 70B):
+
+- **Refusal on Evidence (Q50):** Refused to conclude even when the first retrieved document provided explicit proof (a regression from the 0.5B model).
+- **Unsupported Justification (Q183):** Hallucinated a logical deduction (continuous marrow contribution) from a text that only supported local macrophage maintenance.
+- **Misquotation (Q219):** Altered a direct quote inside quotation marks (wrote T(H)2 instead of T(H)1).
+- **Misattribution (Q185):** Cited a document about CHEK2 genetic variants to support a completely unrelated claim about hormonal influences.
+
+### Next Steps
+
+1. Implement a robust JSON evaluation schema to separately measure: Exactitude, Citation Fidelity, and Justified Abstentions.
+2. Store execution metadata (model version, quantization flags, hardware) directly inside the generated JSON results for reproducibility.
