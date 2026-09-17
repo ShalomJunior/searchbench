@@ -29,6 +29,7 @@ class RAGGenerator:
             "low_cpu_mem_usage": True
         }
         
+        self.is_quantized = False
         if quantize and device == "cuda":
             try:
                 from transformers import BitsAndBytesConfig
@@ -38,6 +39,7 @@ class RAGGenerator:
                     bnb_4bit_use_double_quant=True,
                     bnb_4bit_quant_type="nf4"
                 )
+                self.is_quantized = True
             except ImportError:
                 print("Warning: bitsandbytes not installed. Falling back to unquantized loading.")
                 

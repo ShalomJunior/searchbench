@@ -3,6 +3,7 @@ import sys
 import json
 import argparse
 import time
+from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -62,7 +63,8 @@ def main():
     results_payload = {
         "metadata": {
             "model": args.model,
-            "quantized": args.quantize,
+            "quantized_requested": args.quantize,
+            "quantized_effective": rag.is_quantized,
             "dataset": args.dataset,
             "generation_time_seconds": total_time,
             "seconds_per_query": total_time / len(cache_data)
@@ -75,7 +77,8 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     
     safe_model_name = args.model.replace("/", "_")
-    out_path = os.path.join(out_dir, f"rag_answers_{args.dataset}_{safe_model_name}.json")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_path = os.path.join(out_dir, f"rag_answers_{args.dataset}_{safe_model_name}_{timestamp}.json")
     
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(results_payload, f, indent=2, ensure_ascii=False)
