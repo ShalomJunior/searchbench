@@ -14,6 +14,10 @@ The system implements a state-of-the-art **Retrieve & Re-rank** architecture:
 2. **Second-Stage Re-ranking (High Precision):**
    - **Cross-Encoder:** Uses `cross-encoder/ms-marco-MiniLM-L-6-v2` (both Base and Custom Fine-Tuned versions) to perform deep token-level cross-attention on the top candidates, resolving complex semantic nuances.
 
+3. **Generation (RAG):**
+   - **LLM Synthesizer:** Feeds the top-10 verified documents into an LLM (e.g., `Qwen2.5-7B-Instruct`) to generate a direct answer.
+   - **Zero-Trust Citations:** Enforces strict formatting where every generated claim must be mathematically linked to a specific source document via `[doc_id]` citations.
+
 _(See [docs/architecture.md](docs/architecture.md) for a detailed breakdown and system diagram)._
 
 ## 📊 Key Engineering Findings
@@ -37,6 +41,10 @@ When testing the SciFact Fine-Tuned model on unknown domains, it suffered severe
 - **ArguAna (Social):** Base (0.3092) vs. FT (0.2780) — **Degradation**
 
 The neural network "forgot" how to evaluate general texts, overfitting entirely to the scientific domain.
+
+### 4. RAG Scaling Laws & Hallucination
+
+When augmenting the pipeline with generation, model size heavily dictated grounding adherence. A local 0.5B model completely ignored the strict `[doc_id]` citation prompt (citing correctly in only 4/50 queries) and frequently hallucinated or broke mid-sentence. Upgrading to a 7B model on Kaggle GPUs (via 4-bit quantization) fixed formatting compliance (**40/50** correct citations) and rectified severe logical errors (e.g. negations, proportions), though manual verification of abstentions remains necessary.
 
 _(See [PROJECT_LOG.md](PROJECT_LOG.md) for the complete engineering diary, deep-dive metric analyses, and generated visualization plots)._
 
@@ -65,6 +73,18 @@ Evaluate the pipeline dynamically on any BEIR dataset (e.g., `scifact`, `trec-co
 
 ```bash
 python experiments/benchmark_multistage.py --dataset trec-covid --use-elastic
+```
+
+### RAG Generation (Kaggle / Cloud GPU)
+
+Generate cited answers using an LLM on the retrieved documents. Ensure your environment has a GPU and `bitsandbytes` installed for 4-bit quantization.
+
+```bash
+# 1. Pre-compute the retrieval cache
+python experiments/generate_rag_cache.py --dataset scifact
+
+# 2. Run the LLM generator
+python experiments/run_rag_generation.py --model "Qwen/Qwen2.5-7B-Instruct" --dataset scifact --quantize
 ```
 
 ## 📖 Documentation

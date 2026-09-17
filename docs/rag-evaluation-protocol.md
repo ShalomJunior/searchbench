@@ -9,18 +9,24 @@ Conformément aux recommandations d'audit, la génération (réponses) et la rec
 Pour chaque question du dataset test et sa réponse générée, attribuez un score (ex: 0, 0.5, ou 1) sur les trois axes suivants :
 
 ### 1. Exactitude de la réponse (Correctness)
-La réponse générée est-elle factuellement exacte par rapport aux documents *fournis* ?
-- **Piège SciFact** : Sur SciFact, une requête est souvent une *affirmation* scientifique (ex: "Le cholestérol LDL n'est pas impliqué dans les maladies cardiovasculaires"). Un document pertinent peut prouver que cette affirmation est **fausse**.
+
+La réponse générée est-elle factuellement exacte par rapport aux documents _fournis_ ?
+
+- **Piège SciFact** : Sur SciFact, une requête est souvent une _affirmation_ scientifique (ex: "Le cholestérol LDL n'est pas impliqué dans les maladies cardiovasculaires"). Un document pertinent peut prouver que cette affirmation est **fausse**.
 - Le modèle ne doit pas "valider" la requête aveuglément. Il doit dire : "D'après les documents, cette affirmation est fausse, car le document indique que..."
 - **Critère** : La réponse contredit-elle ou confirme-t-elle la requête de manière juste selon les documents ?
 
 ### 2. Soutien des Citations (Groundedness / Citation Accuracy)
+
 Chaque fait ou affirmation dans la réponse générée DOIT être suivi d'une citation `[doc_id]`.
-- **Vérification** : Prenez la phrase qui précède la citation `[doc_id]`. Lisez le texte du document correspondant dans le cache de recherche. Le document contient-il *réellement* cette information ?
+
+- **Vérification** : Prenez la phrase qui précède la citation `[doc_id]`. Lisez le texte du document correspondant dans le cache de recherche. Le document contient-il _réellement_ cette information ?
 - **Hallucination de citation** : Si le modèle cite un document qui ne parle pas du tout de ce fait, c'est une erreur grave.
 
 ### 3. Reconnaissance des Manques (Honesty / Refusal)
+
 Si le moteur de recherche (BM25 + Dense + Cross-Encoder) a échoué et n'a ramené **aucun document utile** dans le top 10 pour répondre à la question :
+
 - Le modèle doit admettre qu'il ne sait pas.
 - S'il tente d'inventer une réponse en s'appuyant sur ses poids internes (sans citation valide), c'est un échec (hallucination RAG).
 
