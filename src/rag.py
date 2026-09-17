@@ -38,10 +38,10 @@ class RAGGenerator:
                     bnb_4bit_use_double_quant=True,
                     bnb_4bit_quant_type="nf4"
                 )
-                model_kwargs["device_map"] = "auto"
             except ImportError:
                 print("Warning: bitsandbytes not installed. Falling back to unquantized loading.")
-        elif device == "cuda":
+                
+        if device == "cuda":
             model_kwargs["device_map"] = "auto"
             
         self.model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)

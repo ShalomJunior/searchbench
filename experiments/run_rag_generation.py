@@ -59,13 +59,26 @@ def main():
     total_time = time.perf_counter() - start_time
     print(f"\nGeneration completed in {total_time:.2f} seconds ({total_time/len(cache_data):.2f}s per query).")
     
+    results_payload = {
+        "metadata": {
+            "model": args.model,
+            "quantized": args.quantize,
+            "dataset": args.dataset,
+            "generation_time_seconds": total_time,
+            "seconds_per_query": total_time / len(cache_data)
+        },
+        "results": results
+    }
+    
     # 4. Save results
     out_dir = os.path.join(project_root, "results")
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, f"rag_answers_{args.dataset}.json")
+    
+    safe_model_name = args.model.replace("/", "_")
+    out_path = os.path.join(out_dir, f"rag_answers_{args.dataset}_{safe_model_name}.json")
     
     with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2, ensure_ascii=False)
+        json.dump(results_payload, f, indent=2, ensure_ascii=False)
         
     print(f"Saved {len(results)} answers to {out_path}")
 
