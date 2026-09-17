@@ -1,0 +1,94 @@
+import json
+import os
+
+notebook = {
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# SearchBench: RAG Generation (GPU)\n",
+    "\n",
+    "This notebook executes the RAG Generation pipeline in a cloud environment to generate answers using large language models (e.g., Llama-3 8B) on hardware accelerators (e.g., T4/P100 GPUs)."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 1. Environment Setup\n",
+    "Clone the repository and install the required dependencies. If your repository is private, you will need to provide a GitHub Personal Access Token (PAT) in the clone URL."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": None,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Remplacez le lien si le repo est privé, ex: !git clone https://<USERNAME>:<TOKEN>@github.com/ShalomJunior/searchbench.git\n",
+    "!git clone https://github.com/ShalomJunior/searchbench.git\n",
+    "%cd searchbench\n",
+    "!pip install -r requirements.txt\n",
+    "!pip install transformers accelerate sentence-transformers"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 2. Prepare Cache\n",
+    "First, we run the cache generation script to pre-fetch the top-10 documents for each query using our Hybrid Search (BM25 + FAISS + CrossEncoder)."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": None,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "!python experiments/generate_rag_cache.py"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 3. RAG Generation\n",
+    "Run the generation loop. By default, the script will use a HuggingFace model. Make sure to authenticate with HF if you are using a gated model like Llama-3."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": None,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "!python experiments/run_rag_generation.py --model \"Qwen/Qwen2.5-7B-Instruct\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Results\n",
+    "The generated answers are saved to `results/rag_answers_scifact.json`."
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
+
+os.makedirs("notebooks", exist_ok=True)
+with open("notebooks/kaggle_rag_evaluation.ipynb", "w", encoding="utf-8") as f:
+    json.dump(notebook, f, indent=1)
+
+print("Notebook successfully recreated at notebooks/kaggle_rag_evaluation.ipynb in the correct format")
