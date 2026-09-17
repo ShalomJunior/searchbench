@@ -861,3 +861,35 @@ While the InfoNCE fine-tuning on SciFact hard negatives vastly improved performa
 This proves that while domain-specific contrastive learning is incredibly powerful for isolated verticals, deploying a generalized search engine requires training on a massively diverse distribution of hard negatives to avoid **Catastrophic Forgetting**.
 
 ![Catastrophic Forgetting](results/plots/catastrophic_forgetting.png)
+
+## 27. RAG Fundamentals & Grounding
+
+Having successfully built a multi-stage information retrieval system (BM25 + FAISS + Cross-Encoder), the next logical step is to connect it to a Large Language Model (LLM). This transforms our architecture from a classic "Search Engine" (which simply returns a ranked list of links) into a true "Answer Engine" (which synthesizes a coherent, readable response). This paradigm is known as **Retrieval-Augmented Generation (RAG)**.
+
+### Why do we need RAG?
+
+While modern frontier models (like GPT-6 Astra, GPT-5.6 Sol, or Meta's Llama 4 Maverick) possess immense reasoning capabilities, relying solely on their internal, parametric memory for a search application introduces three fatal flaws:
+
+1. **Knowledge Cutoff (Staleness)**: An LLM's weights are permanently frozen the moment its training run finishes. If a groundbreaking scientific paper is published today, the model is entirely blind to it unless the company spends millions of dollars to retrain or fine-tune it.
+2. **Hallucination**: By design, LLMs are probabilistic next-token predictors. If you ask a question it doesn't know the answer to, its generative nature forces it to "guess". This frequently results in the model inventing plausible-sounding but entirely fabricated facts, quotes, or medical statistics.
+3. **Lack of Verifiability**: A standard LLM cannot cite its sources. When it outputs a scientific claim, the user has absolutely no way to verify whether that claim was derived from a peer-reviewed journal or hallucinated from a Reddit comment in its training data.
+
+### The RAG Architecture
+
+RAG elegantly solves these problems by decoupling _knowledge_ from _reasoning_.
+
+Instead of asking the LLM to rely on its static memory, we treat our multi-stage Search Engine as an external, highly dynamic database. The architecture operates in two distinct phases:
+
+1. **The Retriever**: When the user asks a question, our search pipeline (BM25 $\rightarrow$ Dense $\rightarrow$ RRF $\rightarrow$ Cross-Encoder) scans the corpus and retrieves the absolute best `Top-K` documents (e.g., the top 5 most relevant scientific abstracts).
+2. **The Generator**: We inject those retrieved documents directly into the LLM's context window alongside the user's question. We enforce a strict system prompt: _"Answer the user's question using ONLY the provided documents. Do not use outside knowledge."_
+
+Because the underlying database (the FAISS index and Elasticsearch) can be updated instantly with new documents, the system's knowledge is always real-time. The LLM is relegated to the role of a pure synthesizer rather than a flawed knowledge base.
+
+### The Mechanics and Failure Modes
+
+Before writing the integration pipeline, it is critical to understand the mechanical challenges of engineering a robust RAG system:
+
+- **Chunking & Context Selection**: How to slice large documents so they fit into the LLM's finite context window without severing semantic meaning, destroying entity relationships, or dropping critical context.
+- **Grounding**: The architectural challenge of forcing the LLM to rely _strictly_ on the retrieved text to formulate its answer, actively suppressing its urge to use its pre-training knowledge.
+- **Hallucination (The RAG Variant)**: Even with perfectly relevant documents provided in the prompt, the LLM might still ignore them and invent facts.
+- **Citation Extraction**: The complex mechanism of forcing the LLM to map every generated sentence back to the exact passage ID (e.g., `[doc_id]`) that mathematically supports it, ensuring full traceability and zero-trust verifiability of the generated answer.
