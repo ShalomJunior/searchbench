@@ -30,7 +30,7 @@ notebook = {
     "!git clone https://github.com/ShalomJunior/searchbench.git\n",
     "%cd searchbench\n",
     "!pip install -r requirements.txt\n",
-    "!pip install transformers accelerate sentence-transformers"
+    "!pip install transformers accelerate sentence-transformers bitsandbytes"
    ]
   },
   {
@@ -64,7 +64,7 @@ notebook = {
    "metadata": {},
    "outputs": [],
    "source": [
-    "!python experiments/run_rag_generation.py --model \"Qwen/Qwen2.5-7B-Instruct\""
+    "!python experiments/run_rag_generation.py --model \"Qwen/Qwen2.5-7B-Instruct\" --quantize"
    ]
   },
   {

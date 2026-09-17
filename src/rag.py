@@ -2,7 +2,7 @@ import torch
 from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
 
 class RAGGenerator:
-    def __init__(self, model_name: str = "Qwen/Qwen2.5-0.5B-Instruct"):
+    def __init__(self, model_name: str = "Qwen/Qwen2.5-0.5B-Instruct", quantize: bool = False):
         """
         Initialize the RAG Generator using a HuggingFace text-generation model.
         Default is a very small model (0.5B) suitable for local CPU testing.
@@ -20,14 +20,33 @@ class RAGGenerator:
             device = "mps"
             
         print(f"Using device: {device}")
+        print(f"Quantization enabled: {quantize}")
         
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.float16 if device != "cpu" else torch.float32,
-            low_cpu_mem_usage=True
-        )
-        self.model.to(device) # type: ignore
+        
+        model_kwargs = {
+            "torch_dtype": torch.float16 if device != "cpu" else torch.float32,
+            "low_cpu_mem_usage": True
+        }
+        
+        if quantize and device == "cuda":
+            try:
+                from transformers import BitsAndBytesConfig
+                model_kwargs["quantization_config"] = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_compute_dtype=torch.float16,
+                    bnb_4bit_use_double_quant=True,
+                    bnb_4bit_quant_type="nf4"
+                )
+                model_kwargs["device_map"] = "auto"
+            except ImportError:
+                print("Warning: bitsandbytes not installed. Falling back to unquantized loading.")
+        elif device == "cuda":
+            model_kwargs["device_map"] = "auto"
+            
+        self.model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
+        if not (quantize and device == "cuda") and "device_map" not in model_kwargs:
+            self.model.to(device) # type: ignore
         
         self.pipe = pipeline(
             "text-generation",

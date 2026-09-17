@@ -12,6 +12,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run RAG Generation")
     parser.add_argument("--dataset", type=str, default="scifact")
     parser.add_argument("--model", type=str, default="Qwen/Qwen2.5-0.5B-Instruct", help="HuggingFace model name")
+    parser.add_argument("--quantize", action="store_true", help="Enable 4-bit quantization (requires bitsandbytes)")
     args = parser.parse_args()
 
     print(f"=== Running RAG Generation ({args.dataset.upper()}) ===")
@@ -31,7 +32,7 @@ def main():
     print(f"Loaded {len(cache_data)} queries from cache.")
     
     # 2. Initialize RAG Generator
-    rag = RAGGenerator(model_name=args.model)
+    rag = RAGGenerator(model_name=args.model, quantize=args.quantize)
     
     # 3. Generate answers
     results = []
