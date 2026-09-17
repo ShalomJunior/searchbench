@@ -902,11 +902,11 @@ The goal was to measure the model's ability to ground its answers using explicit
 
 ### Quantitative Improvements
 
-| Metric                              | Qwen2.5-0.5B (Local) | Qwen2.5-7B (Kaggle GPU) |
-| ----------------------------------- | -------------------- | ----------------------- |
-| **Answers with at least one numeric citation** | 4 / 50               | **40 / 50**             |
+| Metric                                                | Qwen2.5-0.5B (Local) | Qwen2.5-7B (Kaggle GPU) |
+| ----------------------------------------------------- | -------------------- | ----------------------- |
+| **Answers with at least one numeric citation**        | 4 / 50               | **40 / 50**             |
 | **Numeric citation IDs absent from supplied context** | 0                    | 0                       |
-| **Cut-off / Interrupted Answers**   | 5                    | **0**                   |
+| **Cut-off / Interrupted Answers**                     | 5                    | **0**                   |
 
 _Note: The 10 queries where the 7B model did not provide a citation are abstentions; their correctness still requires manual annotation._
 

@@ -72,7 +72,7 @@ notebook = {
    "metadata": {},
    "source": [
     "## Results\n",
-    "The generated answers are saved to `results/rag_answers_scifact.json`."
+    "The generated answers are saved to `results/rag_answers_scifact_<model>_<timestamp>.json`."
    ]
   }
  ],

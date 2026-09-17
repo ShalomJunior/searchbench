@@ -26,7 +26,7 @@ Si le moteur de recherche (BM25 + Dense + Cross-Encoder) a échoué et n'a ramen
 
 ## Procédure
 
-1. Exécutez `experiments/generate_rag_cache.py` pour générer `data/rag_retrieval_cache.json` (les 50 questions et leurs documents figés).
-2. Exécutez `experiments/run_rag_generation.py` pour générer les réponses avec votre modèle local ou Kaggle (sauvegardé dans `results/rag_answers.json`).
-3. Ouvrez `results/rag_answers.json` et notez un échantillon aléatoire de 20 questions selon les 3 critères ci-dessus.
+1. Exécutez `experiments/generate_rag_cache.py` pour générer `data/rag_retrieval_cache_scifact.json` (les 50 questions et leurs documents figés).
+2. Exécutez `experiments/run_rag_generation.py` pour générer les réponses avec votre modèle local ou Kaggle (sauvegardé dans `results/rag_answers_scifact_<model>_<timestamp>.json`).
+3. Ouvrez le fichier de résultats généré et notez un échantillon aléatoire de 20 questions selon les 3 critères ci-dessus.
 4. Synthétisez les résultats dans votre journal de projet.
