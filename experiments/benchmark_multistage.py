@@ -37,7 +37,7 @@ def evaluate_pipeline(name: str, queries: dict, qrels: dict, search_func) -> Non
         retrieved_ids = [doc_id for doc_id, _ in results]
         
         ndcg_list.append(ndcg_at_k(retrieved_ids, scores, k=10))
-        mrr_list.append(mrr(retrieved_ids, relevant_ids))
+        mrr_list.append(mrr(retrieved_ids, relevant_ids, k=10))
         recall_list.append(recall_at_k(retrieved_ids, relevant_ids, k=100))
         valid_queries += 1
 
@@ -102,8 +102,8 @@ def main() -> None:
     def hybrid_plus_reranker(q):
         # Fetch top 100 candidates rapidly
         candidates = hybrid.search(q, flat_corpus, top_k=100)
-        # Rerank to get the definitive top 10
-        return reranker.rerank(q, candidates, flat_corpus, top_k=10)
+        # Rerank to get the definitive order for all 100 candidates
+        return reranker.rerank(q, candidates, flat_corpus, top_k=100)
 
     evaluate_pipeline("4. Hybrid + Base Reranker", queries, qrels, hybrid_plus_reranker)
 
@@ -111,7 +111,7 @@ def main() -> None:
     if finetuned_reranker:
         def hybrid_plus_finetuned(q):
             candidates = hybrid.search(q, flat_corpus, top_k=100)
-            return finetuned_reranker.rerank(q, candidates, flat_corpus, top_k=10)
+            return finetuned_reranker.rerank(q, candidates, flat_corpus, top_k=100)
 
         evaluate_pipeline("5. Hybrid + FT Reranker", queries, qrels, hybrid_plus_finetuned)
     else:
