@@ -26,19 +26,19 @@ SearchBench was evaluated across multiple BEIR datasets: **SciFact** (Science), 
 
 ### 1. The Production Lexical Bottleneck
 
-While Dense Retrieval (FAISS) and Cross-Encoder reranking (GPU) executed in milliseconds, the initial pure Python BM25 baseline became a massive bottleneck (taking **~7,000 ms** per query on TREC-COVID's 171k documents). After integrating a production-grade **Elasticsearch** backend, latency plummeted to **~24 ms**, conclusively proving why production systems rely on dedicated search infrastructure.
+While Dense Retrieval (FAISS) and Cross-Encoder reranking (GPU) executed in milliseconds, the initial pure Python BM25 baseline became a massive bottleneck (taking **~7,000 ms** per query on TREC-COVID's 171k documents). After integrating a production-grade **Elasticsearch** backend, latency plummeted to **~17 ms**, conclusively proving why production systems rely on dedicated search infrastructure.
 
 ### 2. The Power of Fine-Tuning (In-Domain)
 
-By mining Hard Negatives and applying the **InfoNCE Loss**, the Cross-Encoder was fine-tuned on the SciFact dataset. The Fine-Tuned Reranker (**0.7303 NDCG@10**) shattered the Base model baseline (**0.6888 NDCG@10**), proving the absolute necessity of domain-specific contrastive learning for specialized verticals.
+By mining Hard Negatives and applying the **InfoNCE Loss**, the Cross-Encoder was fine-tuned on the SciFact dataset. The Fine-Tuned Reranker (**0.7576 NDCG@10**) shattered the Base model baseline (**0.6889 NDCG@10**), proving the absolute necessity of domain-specific contrastive learning for specialized verticals.
 
 ### 3. Catastrophic Forgetting (Out-of-Domain)
 
 When testing the SciFact Fine-Tuned model on unknown domains, it suffered severe **Catastrophic Forgetting**:
 
-- **FIQA (Finance):** Base (0.3696) vs. FT (0.3399) — **Degradation**
-- **TREC-COVID (Medicine):** Base (0.7387) vs. FT (0.6959) — **Degradation**
-- **ArguAna (Social):** Base (0.3092) vs. FT (0.2780) — **Degradation**
+- **FIQA (Finance):** Base (0.3696) vs. FT (0.3475) — **Degradation**
+- **TREC-COVID (Medicine):** Base (0.7387) vs. FT (0.7135) — **Degradation**
+- **ArguAna (Social):** Base (0.3092) vs. FT (0.2686) — **Degradation**
 
 The neural network "forgot" how to evaluate general texts, overfitting entirely to the scientific domain.
 
