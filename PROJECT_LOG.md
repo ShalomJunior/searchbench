@@ -744,21 +744,21 @@ With the training loop complete and the model fine-tuned on the SciFact hard neg
 
 **The Final Results (Kaggle GPU T4):**
 
-| System Architecture         | NDCG@10    | MRR@10     | Latency (ms) |
-| --------------------------- | ---------- | ---------- | ------------ |
-| 1. BM25 Baseline            | 0.5379     | 0.5105     | 250.75       |
-| 2. Dense (BGE)              | 0.7200     | 0.6845     | 10.97        |
-| 3. Hybrid (RRF)             | 0.6641     | 0.6234     | 279.37       |
-| 4. Hybrid + Base Reranker   | 0.6888     | 0.6618     | 787.58       |
-| **5. Hybrid + FT Reranker** | **0.7303** | **0.7030** | 783.32       |
+| System Architecture         | NDCG@10    | MRR@10     | Recall@100 | Latency (ms) |
+| --------------------------- | ---------- | ---------- | ---------- | ------------ |
+| 1. BM25                     | 0.5379     | 0.5105     | 0.7894     | 293.95       |
+| 2. Dense (BGE)              | 0.7200     | 0.6845     | 0.9533     | 13.31        |
+| 3. Hybrid (RRF)             | 0.6436     | 0.6127     | 0.9417     | 334.57       |
+| 4. Hybrid + Base Reranker   | 0.6888     | 0.6618     | 0.9417     | 811.04       |
+| **5. Hybrid + FT Reranker** | **0.6975** | **0.6627** | 0.9417     | 810.94       |
 
 ### Conclusion
 
-The experiment was an absolute success.
+The fine-tuning successfully shifted the model's domain understanding.
 
 1. The **Base Reranker** (0.6888) previously _degraded_ the performance of the pure Dense pipeline (0.7200) because it was out-of-domain (Bing search vs. Scientific text).
-2. By mining Hard Negatives and applying the **InfoNCE Loss**, the model successfully learned the specific lexical and semantic nuances of scientific claims.
-3. The **Fine-Tuned Reranker** (0.7303) shattered the baseline, reclaiming its position as the ultimate precision layer and proving the absolute necessity of domain-specific contrastive learning in modern Information Retrieval architectures.
+2. By mining Hard Negatives and applying the **InfoNCE Loss**, the model successfully learned the specific lexical and semantic nuances of scientific claims, raising the score to **0.6975**.
+3. While it significantly improved over the Base Reranker, it did not yet surpass the pure Dense baseline (0.7200). As we will discover in the scaling section below, this ceiling is artificially imposed by the poor recall of our naive Python `BM25Engine`, which starves the reranker of good candidate documents.
 
 ---
 
@@ -788,23 +788,23 @@ First, I ran the benchmark using our initial pure Python `BM25Engine` built on n
 
 **FIQA (Finance - Evaluated on 1,000 queries due to size):**
 
-| System Architecture         | NDCG@10 | MRR@10 | Recall@100 | Latency (ms) |
-| --------------------------- | ------- | ------ | ---------- | ------------ |
-| 1. BM25                     | 0.1342  | 0.1743 | 0.3434     | **1763.59**  |
-| 2. Dense (BGE)              | 0.3848  | 0.4734 | 0.6866     | 21.37        |
-| 3. Hybrid (RRF)             | 0.2871  | 0.3523 | 0.6629     | **1810.29**  |
-| 4. Hybrid + Base Reranker   | 0.3759  | 0.4487 | 0.4526     | **2199.27**  |
-| **5. Hybrid + FT Reranker** | 0.3454  | 0.4183 | 0.4144     | **2318.82**  |
+| System Architecture       | NDCG@10    | MRR@10     | Recall@100 | Latency (ms) |
+| ------------------------- | ---------- | ---------- | ---------- | ------------ |
+| 1. BM25                   | 0.1342     | 0.1743     | 0.3434     | 1763.59      |
+| 2. Dense (BGE)            | 0.3848     | 0.4734     | 0.6866     | 21.37        |
+| 3. Hybrid (RRF)           | 0.2871     | 0.3421     | 0.6629     | 1929.34      |
+| 4. Hybrid + Base Reranker | **0.3759** | **0.4487** | 0.6629     | 2307.46      |
+| 5. Hybrid + FT Reranker   | 0.3331     | 0.4117     | 0.6629     | 2318.64      |
 
 **TREC-COVID (Medicine - 50 queries):**
 
-| System Architecture         | NDCG@10 | MRR@10 | Recall@100 | Latency (ms) |
-| --------------------------- | ------- | ------ | ---------- | ------------ |
-| 1. BM25                     | 0.4205  | 0.7188 | 0.0695     | **6935.50**  |
-| 2. Dense (BGE)              | 0.6452  | 0.8779 | 0.1233     | 39.39        |
-| 3. Hybrid (RRF)             | 0.6456  | 0.9389 | 0.1090     | **7008.65**  |
-| 4. Hybrid + Base Reranker   | 0.7491  | 0.8833 | 0.0215     | **7516.69**  |
-| **5. Hybrid + FT Reranker** | 0.7180  | 0.8857 | 0.0199     | **7530.62**  |
+| System Architecture       | NDCG@10    | MRR@10     | Recall@100 | Latency (ms) |
+| ------------------------- | ---------- | ---------- | ---------- | ------------ |
+| 1. BM25                   | 0.4205     | 0.7152     | 0.0696     | 6988.71      |
+| 2. Dense (BGE)            | 0.6452     | 0.8779     | 0.1233     | 39.08        |
+| 3. Hybrid (RRF)           | 0.6452     | 0.9389     | 0.1090     | 7075.56      |
+| 4. Hybrid + Base Reranker | **0.7491** | 0.8833     | 0.1090     | 7554.58      |
+| 5. Hybrid + FT Reranker   | 0.7186     | **0.9025** | 0.1090     | 7576.13      |
 
 While Dense Retrieval (FAISS) and Cross-Encoder reranking (GPU) executed in milliseconds, the lexical BM25 baseline became a massive bottleneck. On the 171k documents of TREC-COVID, the pure Python BM25 implementation took nearly **7 seconds per query**.
 
@@ -814,37 +814,49 @@ To solve this latency bottleneck, I integrated a production-grade **Elasticsearc
 
 Here are the results running the exact same queries against the new Elasticsearch backend:
 
+**SciFact (Science):**
+
+| System Architecture         | NDCG@10    | MRR@10     | Recall@100 | Latency (ms) |
+| --------------------------- | ---------- | ---------- | ---------- | ------------ |
+| 1. BM25                     | 0.6826     | 0.6464     | 0.9282     | 11.33        |
+| 2. Dense (BGE)              | 0.7200     | 0.6845     | 0.9533     | 11.86        |
+| 3. Hybrid (RRF)             | 0.7358     | 0.7021     | 0.9617     | 20.71        |
+| 4. Hybrid + Base Reranker   | 0.6889     | 0.6584     | 0.9617     | 506.04       |
+| **5. Hybrid + FT Reranker** | **0.7576** | **0.7277** | 0.9617     | 502.44       |
+
 **FIQA (Finance):**
 
-| System Architecture         | NDCG@10    | MRR@10 | Recall@100 | Latency (ms) |
-| --------------------------- | ---------- | ------ | ---------- | ------------ |
-| 1. BM25                     | 0.2536     | 0.3189 | 0.5489     | **9.99**     |
-| 2. Dense (BGE)              | 0.3848     | 0.4734 | 0.6866     | 21.45        |
-| 3. Hybrid (RRF)             | 0.3638     | 0.4502 | 0.6943     | 33.73        |
-| 4. Hybrid + Base Reranker   | **0.3696** | 0.4419 | 0.4451     | 405.97       |
-| **5. Hybrid + FT Reranker** | **0.3399** | 0.4123 | 0.4093     | 403.75       |
+| System Architecture         | NDCG@10    | MRR@10     | Recall@100 | Latency (ms) |
+| --------------------------- | ---------- | ---------- | ---------- | ------------ |
+| 1. BM25                     | 0.2536     | 0.3089     | 0.5489     | 7.72         |
+| 2. Dense (BGE)              | 0.3848     | 0.4650     | 0.6866     | 19.84        |
+| 3. Hybrid (RRF)             | 0.3638     | 0.4406     | 0.6943     | 30.33        |
+| 4. Hybrid + Base Reranker   | **0.3696** | **0.4419** | 0.6943     | 370.49       |
+| **5. Hybrid + FT Reranker** | 0.3475     | 0.4165     | 0.6943     | 369.78       |
 
 **TREC-COVID (Medicine):**
 
-| System Architecture         | NDCG@10    | MRR@10 | Recall@100 | Latency (ms) |
-| --------------------------- | ---------- | ------ | ---------- | ------------ |
-| 1. BM25                     | 0.5913     | 0.8840 | 0.1117     | **24.03**    |
-| 2. Dense (BGE)              | 0.6452     | 0.8779 | 0.1233     | 36.80        |
-| 3. Hybrid (RRF)             | 0.7498     | 0.9800 | 0.1289     | 60.58        |
-| 4. Hybrid + Base Reranker   | **0.7387** | 0.8717 | 0.0213     | 461.16       |
-| **5. Hybrid + FT Reranker** | **0.6959** | 0.8992 | 0.0195     | 471.20       |
+| System Architecture         | NDCG@10    | MRR@10     | Recall@100 | Latency (ms) |
+| --------------------------- | ---------- | ---------- | ---------- | ------------ |
+| 1. BM25                     | 0.5904     | 0.8840     | 0.1118     | 17.03        |
+| 2. Dense (BGE)              | 0.6452     | 0.8779     | 0.1233     | 36.70        |
+| 3. Hybrid (RRF)             | **0.7500** | **0.9800** | 0.1289     | 53.83        |
+| 4. Hybrid + Base Reranker   | 0.7387     | 0.8717     | 0.1289     | 420.38       |
+| **5. Hybrid + FT Reranker** | 0.7135     | 0.9250     | 0.1289     | 435.49       |
 
 **ArguAna (Social Arguments/Debates):**
 
-| System Architecture         | NDCG@10    | MRR@10 | Recall@100 | Latency (ms) |
-| --------------------------- | ---------- | ------ | ---------- | ------------ |
-| 1. BM25                     | 0.3568     | 0.2449 | 0.9587     | **12.14**    |
-| 2. Dense (BGE)              | 0.4287     | 0.3038 | 0.9844     | 12.95        |
-| 3. Hybrid (RRF)             | 0.4262     | 0.2981 | 0.9865     | 28.74        |
-| 4. Hybrid + Base Reranker   | **0.3092** | 0.1992 | 0.6615     | 584.43       |
-| **5. Hybrid + FT Reranker** | **0.2780** | 0.1775 | 0.6017     | 583.60       |
+| System Architecture         | NDCG@10    | MRR@10     | Recall@100 | Latency (ms) |
+| --------------------------- | ---------- | ---------- | ---------- | ------------ |
+| 1. BM25                     | 0.3568     | 0.2337     | 0.9587     | 12.97        |
+| 2. Dense (BGE)              | 0.4287     | 0.2956     | 0.9844     | 13.54        |
+| 3. Hybrid (RRF)             | 0.4262     | 0.2903     | 0.9865     | 29.15        |
+| 4. Hybrid + Base Reranker   | **0.3092** | **0.1992** | 0.9865     | 534.75       |
+| **5. Hybrid + FT Reranker** | 0.2686     | 0.1749     | 0.9865     | 532.43       |
 
-By moving from Python dictionaries to Elasticsearch's highly optimized C++/Java inverted indices, the lexical search latency plummeted from ~7,000 ms to **~24 ms**. This conclusively proves why production systems rely on dedicated search infrastructure.
+By moving from Python dictionaries to Elasticsearch's highly optimized C++/Java inverted indices, the lexical search latency plummeted from ~7,000 ms to **~17 ms** for TREC-COVID. 
+
+More importantly, the superior lexical ranking provided by Elasticsearch finally unblocked our Reranker. On **SciFact**, the Hybrid + FT Reranker skyrocketed to an incredible **0.7576** NDCG@10, definitively shattering the pure Dense baseline (0.7200) and proving the absolute necessity of domain-specific contrastive learning atop a robust retrieval foundation. This conclusively proves why production systems rely on dedicated search infrastructure.
 
 ![Latency Comparison](results/plots/latency_comparison.png)
 
@@ -852,9 +864,9 @@ By moving from Python dictionaries to Elasticsearch's highly optimized C++/Java 
 
 Finally, comparing the Reranker scores in the final benchmark reveals a profound discovery regarding model generalization:
 
-- **FIQA (Finance):** Base Reranker (0.3696) vs. FT Reranker (0.3399) — **Degradation**
-- **TREC-COVID (Medicine):** Base Reranker (0.7387) vs. FT Reranker (0.6959) — **Degradation**
-- **ArguAna (Social Debates):** Base Reranker (0.3092) vs. FT Reranker (0.2780) — **Degradation**
+- **FIQA (Finance):** Base Reranker (0.3696) vs. FT Reranker (0.3475) — **Degradation**
+- **TREC-COVID (Medicine):** Base Reranker (0.7387) vs. FT Reranker (0.7135) — **Degradation**
+- **ArguAna (Social Debates):** Base Reranker (0.3092) vs. FT Reranker (0.2686) — **Degradation**
 
 While the InfoNCE fine-tuning on SciFact hard negatives vastly improved performance on scientific claims, it caused the neural network to "forget" how to evaluate general, financial, medical, and argumentative texts. The model overfitted to the scientific domain. The Base model (trained on millions of broad MS-MARCO web queries) remained far more robust across unknown domains.
 

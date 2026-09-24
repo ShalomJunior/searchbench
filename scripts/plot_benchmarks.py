@@ -6,8 +6,8 @@ os.makedirs("results/plots", exist_ok=True)
 
 # 1. Latency Plot (Python vs Elastic)
 labels = ["BM25 Engine", "Hybrid (RRF)"]
-python_latency = [6935.50, 7008.65]
-elastic_latency = [24.03, 60.58]
+python_latency = [6988.71, 7075.56]
+elastic_latency = [17.03, 53.83]
 
 x = np.arange(len(labels))
 width = 0.35
@@ -55,8 +55,8 @@ datasets = [
     "TREC-COVID\n(Out-of-Domain)",
     "ArguAna\n(Out-of-Domain)",
 ]
-base_scores = [0.6888, 0.3696, 0.7387, 0.3092]
-ft_scores = [0.7303, 0.3399, 0.6959, 0.2780]
+base_scores = [0.6889, 0.3696, 0.7387, 0.3092]
+ft_scores = [0.7576, 0.3475, 0.7135, 0.2686]
 
 x = np.arange(len(datasets))
 width = 0.35
