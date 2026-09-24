@@ -144,8 +144,8 @@ def main() -> None:
     def hybrid_plus_reranker(q):
         # Fetch top 100 candidates rapidly
         candidates = hybrid.search(q, flat_corpus, top_k=100)
-        # Rerank to get the definitive top 10
-        return reranker.rerank(q, candidates, flat_corpus, top_k=10)
+        # Rerank to get the definitive top 100 for evaluation
+        return reranker.rerank(q, candidates, flat_corpus, top_k=100)
 
     evaluate_pipeline("4. Hybrid + Base Reranker", queries, qrels, hybrid_plus_reranker)
 
@@ -154,7 +154,7 @@ def main() -> None:
 
         def hybrid_plus_finetuned(q):
             candidates = hybrid.search(q, flat_corpus, top_k=100)
-            return finetuned_reranker.rerank(q, candidates, flat_corpus, top_k=10)
+            return finetuned_reranker.rerank(q, candidates, flat_corpus, top_k=100)
 
         evaluate_pipeline(
             "5. Hybrid + FT Reranker", queries, qrels, hybrid_plus_finetuned
